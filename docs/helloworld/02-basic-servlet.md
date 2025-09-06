@@ -1,5 +1,63 @@
 # Step 2: Basic Servlet
 
+## 🏗️ Struttura Directory Obbligatoria
+
+**Prima di scrivere codice, è fondamentale capire DOVE posizionare il servlet e PERCHÉ.**
+
+### Struttura Corretta del Progetto
+```
+helloworld/
+├── src/main/java/                          ← Codice sorgente Java
+│   └── com/example/servlet/                ← Package structure
+│       └── HelloWorldServlet.java         ← Il nostro servlet
+├── src/main/webapp/                        ← Risorse web
+│   ├── WEB-INF/
+│   │   └── web.xml                        ← Config opzionale
+│   └── index.html                         ← File statici
+└── pom.xml                                ← Configurazione Maven
+```
+
+### ⚠️ Posizionamento CRITICO
+
+**✅ CORRETTO:**
+- File: `src/main/java/com/example/servlet/HelloWorldServlet.java`
+- Package: `package com.example.servlet;`
+
+**❌ ERRORI COMUNI:**
+```
+❌ src/main/webapp/HelloWorldServlet.java     → NON viene compilato
+❌ src/HelloWorldServlet.java                 → Struttura Maven sbagliata  
+❌ com/example/HelloWorldServlet.java         → Package mismatch
+❌ src/main/java/HelloWorldServlet.java       → Manca package structure
+```
+
+### 🔍 Perché Questa Struttura?
+
+1. **Maven Standard Directory Layout**
+   - `src/main/java/` = Root per codice sorgente Java
+   - Maven sa automaticamente dove trovare i file da compilare
+
+2. **Java Package System**
+   - `com/example/servlet/` = Gerarchia di cartelle = Package Java
+   - Previene conflitti di nomi tra classi
+   - Segue convenzione reverse-domain (com.azienda.modulo)
+
+3. **Tomcat Deployment Requirements**
+   - Maven compila da `src/main/java/` a `target/classes/`
+   - WAR impacchetta `target/classes/` in `WEB-INF/classes/`
+   - Tomcat carica servlet da `WEB-INF/classes/com/example/servlet/`
+
+### 🔄 Flusso di Deployment
+```
+src/main/java/com/example/servlet/HelloWorldServlet.java
+                    ↓ (maven compile)
+target/classes/com/example/servlet/HelloWorldServlet.class
+                    ↓ (maven package)
+target/helloworld.war → WEB-INF/classes/com/example/servlet/HelloWorldServlet.class
+                    ↓ (tomcat deploy)
+webapps/helloworld/WEB-INF/classes/com/example/servlet/HelloWorldServlet.class
+```
+
 ## Create HelloWorldServlet.java
 
 File: `src/main/java/com/example/servlet/HelloWorldServlet.java`
@@ -130,6 +188,51 @@ Dichiara che il metodo può lanciare eccezioni. Tomcat le gestisce automaticamen
 - `ServletException` - Errori specifici del servlet
 - `IOException` - Errori di input/output (rete, file)
 
+## 🐛 Troubleshooting: Errori Comuni
+
+### Errore: ClassNotFoundException
+```
+java.lang.ClassNotFoundException: com.example.servlet.HelloWorldServlet
+```
+**Causa:** Package declaration non corrisponde alla struttura cartelle
+**Soluzione:** 
+- Verifica che il file sia in `src/main/java/com/example/servlet/`
+- Controlla che la prima riga sia esattamente `package com.example.servlet;`
+
+### Errore: 404 Not Found
+```
+HTTP Status 404 – Not Found
+```
+**Causa:** URL mapping sbagliato o servlet non deployato
+**Soluzioni:**
+- URL corretto: `http://localhost:9292/helloworld/api/hello`
+- Verifica che il WAR sia stato deployato in `webapps/`
+- Controlla che `@WebServlet("/api/hello")` sia presente
+
+### Errore: NoSuchMethodError
+```
+java.lang.NoSuchMethodError: jakarta.servlet.http.HttpServlet.init
+```
+**Causa:** Versioni Maven dependency sbagliate (javax vs jakarta)
+**Soluzione:** Usa `jakarta.servlet-api` nel pom.xml, non `javax.servlet-api`
+
+### Errore: Compilation Failed
+```
+[ERROR] cannot find symbol: class HttpServlet
+```
+**Causa:** File posizionato fuori da `src/main/java/`
+**Soluzioni:**
+- Sposta il file in `src/main/java/com/example/servlet/`
+- NON mettere mai servlet in `src/main/webapp/`
+
+### Servlet Non Risponde
+**Controlli da fare:**
+1. File nel posto giusto: `src/main/java/com/example/servlet/HelloWorldServlet.java`
+2. Package corretto: `package com.example.servlet;`
+3. WAR deployato: Verifica presenza di `webapps/helloworld.war` o `webapps/helloworld/`
+4. URL completo: `http://localhost:9292/helloworld/api/hello`
+5. Log Tomcat: Controlla `logs/catalina.out` per errori
+
 ## Test
 
 Ora che abbiamo un servlet funzionante, compiliamolo e testiamolo:
@@ -141,8 +244,19 @@ mvn package
 
 **Cosa succede:**
 1. Maven compila `HelloWorldServlet.java` in `HelloWorldServlet.class`
-2. Crea il WAR con la classe compilata
-3. Dopo il deploy, Tomcat carica il servlet
+2. Crea il WAR con la classe compilata in `WEB-INF/classes/com/example/servlet/`
+3. Dopo il deploy, Tomcat carica il servlet dalla struttura package corretta
 4. L'URL `/api/hello` restituirà il testo "Hello World!"
 
 **Output atteso:** Pagina web con il testo `Hello World!`
+
+### Verifica Deployment
+```bash
+# Controlla che il servlet sia nel WAR
+jar -tf target/helloworld.war | grep HelloWorldServlet
+# Output atteso: WEB-INF/classes/com/example/servlet/HelloWorldServlet.class
+
+# Controlla deployment in Tomcat
+ls -la webapps/helloworld/WEB-INF/classes/com/example/servlet/
+# Output atteso: HelloWorldServlet.class
+```

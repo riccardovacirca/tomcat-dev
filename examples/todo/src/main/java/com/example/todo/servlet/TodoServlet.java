@@ -47,8 +47,14 @@ public class TodoServlet extends HttpServlet {
             } else if (pathInfo.startsWith("/")) {
                 handleGetById(pathInfo.substring(1), resp);
             }
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Database connection failed")) {
+                handleError(resp, 503, e.getMessage());
+            } else {
+                handleError(resp, 500, "Internal server error: " + e.getMessage());
+            }
         } catch (Exception e) {
-            handleError(resp, 500, "Internal server error");
+            handleError(resp, 500, "Internal server error: " + e.getMessage());
         }
     }
     
@@ -71,8 +77,14 @@ public class TodoServlet extends HttpServlet {
             }
         } catch (ValidationException e) {
             handleError(resp, 400, e.getMessage());
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Database connection failed")) {
+                handleError(resp, 503, e.getMessage());
+            } else {
+                handleError(resp, 500, "Internal server error: " + e.getMessage());
+            }
         } catch (Exception e) {
-            handleError(resp, 500, "Internal server error");
+            handleError(resp, 500, "Internal server error: " + e.getMessage());
         }
     }
     
@@ -95,8 +107,14 @@ public class TodoServlet extends HttpServlet {
             }
         } catch (ValidationException e) {
             handleError(resp, 400, e.getMessage());
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Database connection failed")) {
+                handleError(resp, 503, e.getMessage());
+            } else {
+                handleError(resp, 500, "Internal server error: " + e.getMessage());
+            }
         } catch (Exception e) {
-            handleError(resp, 500, "Internal server error");
+            handleError(resp, 500, "Internal server error: " + e.getMessage());
         }
     }
     
@@ -119,8 +137,14 @@ public class TodoServlet extends HttpServlet {
             }
         } catch (ValidationException e) {
             handleError(resp, 400, e.getMessage());
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Database connection failed")) {
+                handleError(resp, 503, e.getMessage());
+            } else {
+                handleError(resp, 500, "Internal server error: " + e.getMessage());
+            }
         } catch (Exception e) {
-            handleError(resp, 500, "Internal server error");
+            handleError(resp, 500, "Internal server error: " + e.getMessage());
         }
     }
     
@@ -232,8 +256,22 @@ public class TodoServlet extends HttpServlet {
             throws IOException {
         
         resp.setStatus(status);
-        Map<String, String> error = new HashMap<>();
+        Map<String, Object> error = new HashMap<>();
         error.put("error", message);
+        error.put("status", status);
+        
+        // Add error type context
+        if (status == 503) {
+            error.put("type", "DATABASE_CONNECTION_ERROR");
+            error.put("suggestion", "Check database configuration and ensure PostgreSQL is running");
+        } else if (status == 400) {
+            error.put("type", "VALIDATION_ERROR");
+        } else if (status == 404) {
+            error.put("type", "NOT_FOUND");
+        } else if (status == 500) {
+            error.put("type", "INTERNAL_SERVER_ERROR");
+        }
+        
         objectMapper.writeValue(resp.getWriter(), error);
     }
     

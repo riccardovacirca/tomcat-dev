@@ -29,18 +29,39 @@ public class TodoService {
             todo.setPriority("MEDIUM");
         }
         
-        return todoRepository.save(todo);
+        try {
+            return todoRepository.save(todo);
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Failed to setup database connection")) {
+                throw new ValidationException("Database connection failed. Please check if PostgreSQL is running and properly configured.");
+            }
+            throw new ValidationException("Database error occurred while creating todo: " + e.getMessage());
+        }
     }
     
     public Optional<Todo> findById(Long id) {
         if (id == null || id <= 0) {
             return Optional.empty();
         }
-        return todoRepository.findById(id);
+        try {
+            return todoRepository.findById(id);
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Failed to setup database connection")) {
+                throw new RuntimeException("Database connection failed. Please check if PostgreSQL is running and properly configured.", e);
+            }
+            throw new RuntimeException("Database error occurred while finding todo: " + e.getMessage(), e);
+        }
     }
     
     public List<Todo> findAll() {
-        return todoRepository.findAll();
+        try {
+            return todoRepository.findAll();
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Failed to setup database connection")) {
+                throw new RuntimeException("Database connection failed. Please check if PostgreSQL is running and properly configured.", e);
+            }
+            throw new RuntimeException("Database error occurred while retrieving todos: " + e.getMessage(), e);
+        }
     }
     
     public List<Todo> findByCompleted(boolean completed) {
@@ -122,11 +143,18 @@ public class TodoService {
     }
     
     public TodoStats getStats() {
-        long total = todoRepository.count();
-        long completed = todoRepository.countByCompleted(true);
-        long pending = todoRepository.countByCompleted(false);
-        
-        return new TodoStats(total, completed, pending);
+        try {
+            long total = todoRepository.count();
+            long completed = todoRepository.countByCompleted(true);
+            long pending = todoRepository.countByCompleted(false);
+            
+            return new TodoStats(total, completed, pending);
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Failed to setup database connection")) {
+                throw new RuntimeException("Database connection failed. Please check if PostgreSQL is running and properly configured.", e);
+            }
+            throw new RuntimeException("Database error occurred while retrieving statistics: " + e.getMessage(), e);
+        }
     }
     
     private void validateTodo(Todo todo) throws ValidationException {
