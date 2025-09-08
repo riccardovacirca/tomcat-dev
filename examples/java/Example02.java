@@ -21,10 +21,7 @@ class CharType
 
   public CharType() {
     {
-      char x, y, z;
-      x = 'A';
-      y = 'B';
-      z = 'C';
+      char x = 'A', y = 'B', z = 'C';
       this.buff = String.format("x = %c, y = %c, z = %c", x, y, z);
     }
     this.buff += "\n";
@@ -45,10 +42,7 @@ class IntType
 
   public IntType() {
     {
-      int x, y, z;
-      x = 1;
-      y = 2;
-      z = 3;
+      int x = 1, y = 2, z = 3;
       this.buff = String.format("x = %d, y = %d, z = %d", x, y, z);
     }
     this.buff += "\n";
@@ -69,10 +63,7 @@ class DoubleType
 
   public DoubleType() {
     {
-      double x, y, z;
-      x = 1.1;
-      y = 2.2;
-      z = 3.3;
+      double x = 1.1, y = 2.2, z = 3.3;
       this.buff = String.format("x = %.1f, y = %.1f, z = %.1f", x, y, z);
     }
     this.buff += "\n";

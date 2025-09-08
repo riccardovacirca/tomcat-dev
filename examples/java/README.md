@@ -7,12 +7,20 @@
 - [Arrays and Arrays Utilities](#arrays-and-arrays-utilities)
 - [Wrapper Class Methods](#wrapper-class-methods)
 - [Code Blocks](#code-blocks)
+- [Exception Handling](#exception-handling)
+- [Classes and Objects](#classes-and-objects)
+- [Inheritance and Polymorphism](#inheritance-and-polymorphism)
+- [Interfaces and Abstract Classes](#interfaces-and-abstract-classes)
 
 ## Simple HelloWorld Message
 
 Source file: `examples/java/Example01.java`
 
+This example demonstrates the fundamental concepts of Java programming: class definition, object creation, and basic output. It shows how to create a simple class with a private attribute, constructor, and string representation method. The program creates a HelloWorld object and displays its message using the automatic toString() method invocation in printf statements.
+
 ### Class Declaration
+
+Basic class definition with a private instance variable to store the message content.
 
 ```java
 class HelloWorld
@@ -24,6 +32,8 @@ Defines a class named HelloWorld. The class is a template for creating objects.
 
 ### Private Attribute
 
+Declaration of an instance variable with private access modifier for encapsulation.
+
 ```java
 private String buff = null;
 ```
@@ -31,6 +41,8 @@ private String buff = null;
 Declares a private instance variable that stores the message. Only methods of this class can access it.
 
 ### Constructor
+
+Default constructor that initializes the object with a greeting message.
 
 ```java
 public HelloWorld() {
@@ -42,6 +54,8 @@ The constructor is called automatically when creating a new object with `new`. I
 
 ### toString() Method
 
+Override of the toString() method to provide custom string representation.
+
 ```java
 public String toString() {
   return this.buff;
@@ -52,6 +66,8 @@ Override of the toString() method inherited from Object. Returns the string repr
 
 ### Main Class
 
+The public class that serves as the entry point for the Java application.
+
 ```java
 public class Example01
 {
@@ -61,6 +77,8 @@ The public class containing the main method. The name must match the filename.
 
 ### Main Method
 
+Standard main method signature where program execution begins.
+
 ```java
 public static void main(String[] args) {
 ```
@@ -68,6 +86,8 @@ public static void main(String[] args) {
 Entry point of the program. The JVM looks for this method to start execution.
 
 ### Object Creation and Output
+
+Demonstrates object instantiation and formatted output with automatic toString() invocation.
 
 ```java
 System.out.printf("\n");
@@ -78,6 +98,8 @@ System.out.printf("\n");
 Creates a new HelloWorld object and prints it. The printf automatically calls toString() on the object.
 
 ### Complete HelloWorld Example
+
+Full source code combining all the components into a working Java program.
 
 ```java
 /** HelloWorld class */
@@ -110,7 +132,11 @@ Complete program demonstrating basic class creation, object instantiation, and o
 
 Source file: `examples/java/Example02.java`
 
+This example explores Java's primitive data types and their corresponding wrapper classes. It demonstrates the difference between primitive types (char, int, double) and their object wrappers (Character, Integer, Double). The code shows variable declaration, initialization, and formatting for both primitive and wrapper types, illustrating autoboxing and unboxing concepts. Each class formats and displays values using String.format() to show identical behavior between primitives and wrappers.
+
 ### CharType Class Declaration
+
+Class designed to showcase both primitive char and Character wrapper usage.
 
 ```java
 class CharType
@@ -122,6 +148,8 @@ Defines a class that demonstrates character type usage. Uses a buffer to store f
 
 ### CharType Constructor - Primitive Variables
 
+Demonstrates primitive char variable declaration and initialization with character literals.
+
 ```java
 char x, y, z;
 x = 'A';
@@ -130,18 +158,18 @@ z = 'C';
 this.buff = String.format("x = %c, y = %c, z = %c", x, y, z);
 ```
 
-Creates primitive char variables and assigns character literal values. Uses direct character assignment.
-
 ### CharType Constructor - Wrapper Variables
+
+Shows Character wrapper creation with autoboxing from primitive literals.
 
 ```java
 Character x = 'A', y = 'B', z = 'C';
 this.buff += String.format("x = %c, y = %c, z = %c", x, y, z);
 ```
 
-Creates Character wrapper objects with character literals. Demonstrates autoboxing from char to Character.
-
 ### IntType Class - Primitive and Wrapper
+
+Complete class comparing primitive int with Integer wrapper behavior.
 
 ```java
 class IntType {
@@ -165,9 +193,9 @@ class IntType {
 }
 ```
 
-Demonstrates integer type usage with both primitive int and wrapper Integer types.
-
 ### DoubleType Class - Primitive and Wrapper
+
+Complete class comparing primitive double with Double wrapper using decimal formatting.
 
 ```java
 class DoubleType {
@@ -191,8 +219,6 @@ class DoubleType {
 }
 ```
 
-Demonstrates double type usage with primitive double and wrapper Double types.
-
 ### Expected Output
 
 ```
@@ -212,7 +238,11 @@ Shows the output comparing primitive types with their corresponding wrapper clas
 
 Source file: `examples/java/Example03.java`
 
+This example covers Java array creation, manipulation, and utility methods. It demonstrates different ways to declare and initialize arrays, both with primitive types and wrapper classes. The code explores the java.util.Arrays utility class, showing essential operations like sorting, searching, copying, comparing, and filling arrays. Each class illustrates specific array operations with practical examples of array element access, modification, and various utility method applications.
+
 ### CharArray Class - Primitive Arrays
+
+Shows two array creation methods: explicit size with element assignment and direct initialization.
 
 ```java
 class CharArray {
@@ -236,9 +266,9 @@ class CharArray {
 }
 ```
 
-Demonstrates character array creation with explicit size and initialization syntax.
-
 ### IntArray Class - Array Creation
+
+Demonstrates integer array creation with primitive and wrapper types using different initialization approaches.
 
 ```java
 class IntArray {
@@ -262,9 +292,9 @@ class IntArray {
 }
 ```
 
-Creates integer arrays using both new operator and initialization syntax.
-
 ### ArraysUtils Class - Utility Methods
+
+Showcases essential Arrays utility methods for sorting, searching, copying, and display formatting.
 
 ```java
 class ArraysUtils {
@@ -290,9 +320,9 @@ class ArraysUtils {
 }
 ```
 
-Demonstrates Arrays utility methods: toString(), sort(), binarySearch(), copyOf().
-
 ### ArraysComparison Class - Comparison Methods
+
+Illustrates array equality comparison and bulk modification using Arrays utility methods.
 
 ```java
 class ArraysComparison {
@@ -315,8 +345,6 @@ class ArraysComparison {
   }
 }
 ```
-
-Demonstrates array comparison with equals() and array modification with fill().
 
 ### Expected Arrays Output
 
@@ -344,7 +372,11 @@ Complete output showing array operations and utility method results.
 
 Source file: `examples/java/Example04.java`
 
+This example demonstrates the comprehensive API provided by Java's wrapper classes. It explores various methods available in Character, Integer, and Double wrapper classes including object creation, value extraction, comparison, validation, and transformation operations. The code shows factory methods like valueOf(), primitive conversion methods, equality testing, character type checking, case conversion, and numeric comparisons. Each class focuses on specific wrapper class functionality with practical examples of method usage.
+
 ### CharacterCreation Class
+
+Shows Character wrapper object creation and conversion methods for extracting primitive values.
 
 ```java
 class CharacterCreation {
@@ -364,9 +396,9 @@ class CharacterCreation {
 }
 ```
 
-Demonstrates Character wrapper using valueOf() factory method, charValue(), and toString().
-
 ### CharacterComparison Class
+
+Illustrates different methods for comparing Character objects using equality and comparison operations.
 
 ```java
 class CharacterComparison {
@@ -388,9 +420,9 @@ class CharacterComparison {
 }
 ```
 
-Demonstrates character equality with equals(), static compare(), and instance compareTo().
-
 ### CharacterValidation Class
+
+Demonstrates character type validation using static utility methods for digit and letter checking.
 
 ```java
 class CharacterValidation {
@@ -409,9 +441,9 @@ class CharacterValidation {
 }
 ```
 
-Tests character type using static methods isDigit() and isLetter().
-
 ### CharacterTransformation Class
+
+Shows character case conversion using static transformation methods for upper and lower case.
 
 ```java
 class CharacterTransformation {
@@ -430,9 +462,9 @@ class CharacterTransformation {
 }
 ```
 
-Converts character case using static methods toLowerCase() and toUpperCase().
-
 ### IntegerCreation Class
+
+Illustrates Integer wrapper instantiation and conversion back to primitive int values.
 
 ```java
 class IntegerCreation {
@@ -452,9 +484,9 @@ class IntegerCreation {
 }
 ```
 
-Demonstrates Integer wrapper creation and primitive conversion methods.
-
 ### DoubleCreation Class
+
+Shows Double wrapper object creation and extraction of primitive double values with formatting.
 
 ```java
 class DoubleCreation {
@@ -473,8 +505,6 @@ class DoubleCreation {
   }
 }
 ```
-
-Demonstrates Double wrapper creation and primitive conversion methods.
 
 ### Expected Wrapper Methods Output
 
@@ -497,7 +527,11 @@ Complete output showing wrapper class method functionality.
 
 Source file: `examples/java/Example05.java`
 
+This example explores different types of code blocks in Java and their execution order. It demonstrates static blocks that execute once when a class is loaded, instance blocks that run before each constructor call, and local blocks that create new variable scopes within methods. The code illustrates the initialization sequence in Java: static blocks first, then instance blocks, followed by constructors, and shows how local blocks can be used for variable scope management and temporary calculations.
+
 ### ClassBlock Class - Static Block
+
+Demonstrates static initialization block that executes once during class loading.
 
 ```java
 class ClassBlock {
@@ -517,9 +551,9 @@ class ClassBlock {
 }
 ```
 
-Static block executes once when the class is first loaded by the JVM. Runs before any instance creation.
-
 ### InstanceBlock Class - Instance Block
+
+Shows instance initialization block that runs before constructor during object creation.
 
 ```java
 class InstanceBlock {
@@ -539,9 +573,9 @@ class InstanceBlock {
 }
 ```
 
-Instance block executes every time a new object is created. Runs before the constructor code.
-
 ### ConstructorBlock Class - Execution Order
+
+Illustrates the sequence of execution between instance initialization block and constructor.
 
 ```java
 class ConstructorBlock {
@@ -561,9 +595,9 @@ class ConstructorBlock {
 }
 ```
 
-Shows the execution order of instance block and constructor. Instance block runs first.
-
 ### MethodBlock Class - Local Blocks
+
+Demonstrates local code block within a method that creates its own variable scope.
 
 ```java
 class MethodBlock {
@@ -586,9 +620,9 @@ class MethodBlock {
 }
 ```
 
-Method contains a local block with its own scope. Variables declared inside are only accessible within it.
-
 ### LocalBlock Class - Variable Scope
+
+Shows variable accessibility between outer method scope and inner local block scope.
 
 ```java
 class LocalBlock {
@@ -608,8 +642,6 @@ class LocalBlock {
 }
 ```
 
-Demonstrates variable scope in local blocks. Outer variables are accessible inside blocks.
-
 ### Expected Code Blocks Output
 
 ```
@@ -623,6 +655,322 @@ Local block executed
 ```
 
 Shows execution order: static → instance → constructor → method blocks.
+
+[↑ Back to Contents](#table-of-contents)
+
+## Exception Handling
+
+Source file: `examples/java/Example06.java`
+
+This example demonstrates essential Java exception handling patterns. It covers multiple catch blocks with exception hierarchy, method throws declarations, and custom exception creation. The code focuses on practical exception handling techniques commonly used in Java applications.
+
+### BasicException Class - Multiple Catch Blocks
+
+Shows exception hierarchy handling with specific exceptions caught before general ones.
+
+```java
+class BasicException {
+  private String buff = null;
+
+  public BasicException() {
+    try {
+      String str = null;
+      int length = str.length();
+      this.buff = "String length: " + length;
+    } catch (NullPointerException e) {
+      this.buff = "Null pointer caught: " + e.getClass().getSimpleName();
+    } catch (Exception e) {
+      this.buff = "General exception caught: " + e.getClass().getSimpleName();
+    }
+  }
+
+  public String toString() {
+    return this.buff;
+  }
+}
+```
+
+### ThrowsException Class - Method Throws Declaration
+
+Shows method signature with throws clause and explicit exception throwing using throw statement.
+
+```java
+class ThrowsException {
+  private String buff = null;
+
+  public ThrowsException() {
+    try {
+      this.riskyMethod();
+      this.buff = "Method completed successfully";
+    } catch (IllegalArgumentException e) {
+      this.buff = "Method threw exception: " + e.getMessage();
+    }
+  }
+
+  private void riskyMethod() throws IllegalArgumentException {
+    throw new IllegalArgumentException("Invalid argument provided");
+  }
+
+  public String toString() {
+    return this.buff;
+  }
+}
+```
+
+### CustomException Class - User-Defined Exception
+
+Demonstrates creating custom exception classes by extending Exception for application-specific errors.
+
+```java
+class ValidationException extends Exception {
+  public ValidationException(String message) {
+    super(message);
+  }
+}
+
+class CustomException {
+  private String buff = null;
+
+  public CustomException() {
+    try {
+      this.validateInput("");
+      this.buff = "Validation passed";
+    } catch (ValidationException e) {
+      this.buff = "Custom exception: " + e.getMessage();
+    }
+  }
+
+  private void validateInput(String input) throws ValidationException {
+    if (input == null || input.trim().isEmpty()) {
+      throw new ValidationException("Input cannot be empty");
+    }
+  }
+
+  public String toString() {
+    return this.buff;
+  }
+}
+```
+
+### Expected Exception Handling Output
+
+```
+Null pointer caught: NullPointerException
+Method threw exception: Invalid argument provided
+Custom exception: Input cannot be empty
+```
+
+Shows various exception handling scenarios and their corresponding output messages.
+
+[↑ Back to Contents](#table-of-contents)
+
+## Classes and Objects
+
+Source file: `examples/java/Example07.java`
+
+This example demonstrates essential Java class and object concepts. It covers basic class creation, constructors and field initialization, and object interaction through methods. The code focuses on practical object-oriented programming techniques commonly used in Java applications.
+
+### BasicClass - Defining a Class and Creating Objects
+
+Shows how to define a simple class with fields and methods, and instantiate objects from it.
+
+```java
+class BasicClass {
+  private String name;
+
+  public BasicClass(String name) {
+    this.name = name;
+  }
+
+  public String greet() {
+    return "Hello, " + this.name + "!";
+  }
+}
+```
+
+### ConstructorOverload - Multiple Constructors
+
+Demonstrates constructor overloading with different parameter lists for flexible object creation.
+
+```java
+class ConstructorOverload {
+  private int x;
+  private int y;
+
+  public ConstructorOverload() {
+    this(0, 0);
+  }
+
+  public ConstructorOverload(int x) {
+    this(x, 0);
+  }
+
+  public ConstructorOverload(int x, int y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  public String toString() {
+    return "Coordinates: (" + this.x + ", " + this.y + ")";
+  }
+}
+```
+
+### ObjectInteraction - Calling Methods on Objects
+
+Demonstrates how one class can create and interact with another class’s objects using method calls.
+
+```java
+class Calculator {
+  public int add(int a, int b) {
+    return a + b;
+  }
+}
+
+class ObjectInteraction {
+  private String buff = null;
+
+  public ObjectInteraction() {
+    Calculator calc = new Calculator();
+    int sum = calc.add(5, 7);
+    this.buff = "Sum calculated: " + sum;
+  }
+
+  public String toString() {
+    return this.buff;
+  }
+}
+```
+
+### Expected Classes and Objects Output
+
+```
+Hello, Alice!
+Coordinates: (0, 0)
+Coordinates: (3, 0)
+Coordinates: (3, 4)
+Sum calculated: 12
+```
+
+Shows how classes are defined, instantiated, and used to encapsulate data and behavior in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+## Inheritance
+
+Source file: `examples/java/Example08.java`
+
+This example demonstrates Java inheritance. It covers class extension, field reuse, constructor chaining with `super`, and method overriding. The code focuses on basic inheritance patterns without polymorphism.
+
+### Animal and Dog Classes - Extending a Base Class
+
+Shows how a subclass inherits fields and methods from a parent class.
+
+```java
+class Animal {
+  protected String name;
+
+  public Animal(String name) {
+    this.name = name;
+  }
+
+  public String info() {
+    return "Animal name: " + this.name;
+  }
+}
+
+class Dog extends Animal {
+  public Dog(String name) {
+    super(name); // call parent constructor
+  }
+
+  public String bark() {
+    return this.name + " barks loudly";
+  }
+}
+```
+
+### MethodOverride Class - Overriding Parent Method
+
+Demonstrates how a subclass can redefine a method from its parent class.
+
+```java
+class Cat extends Animal {
+  public Cat(String name) {
+    super(name);
+  }
+
+  @Override
+  public String info() {
+    return "Cat name: " + this.name;
+  }
+}
+```
+
+### Expected Inheritance Output
+
+```
+Animal name: Rex
+Rex barks loudly
+Cat name: Milo
+```
+
+Shows basic inheritance and method overriding in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+
+## Interfaces
+
+Source file: `examples/java/Example09.java`
+
+This example demonstrates Java interfaces. It covers interface definition, implementation in classes, and multiple interface usage. The code focuses on practical interface patterns.
+
+### Greeter Interface - Defining and Implementing
+
+Shows how to define an interface and implement it in a class.
+
+```java
+interface Greeter {
+  String greet(String name);
+}
+
+class EnglishGreeter implements Greeter {
+  public String greet(String name) {
+    return "Hello, " + name + "!";
+  }
+}
+```
+
+### Multiple Interfaces - Implementing More Than One
+
+Demonstrates a class implementing multiple interfaces.
+
+```java
+interface Logger {
+  void log(String message);
+}
+
+class ConsoleGreeter implements Greeter, Logger {
+  public String greet(String name) {
+    return "Hi, " + name;
+  }
+
+  public void log(String message) {
+    System.out.println("LOG: " + message);
+  }
+}
+```
+
+### Expected Interfaces Output
+
+```
+Hello, Alice!
+Hi, Bob
+LOG: Greeting sent to Bob
+```
+
+Shows how interfaces define contracts and how classes can implement one or more interfaces in Java.  
 
 [↑ Back to Contents](#table-of-contents)
 

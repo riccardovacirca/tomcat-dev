@@ -22,7 +22,7 @@ class CharacterCreation
   private String buff = null;
 
   public CharacterCreation() {
-    Character x = Character.valueOf('A');
+    Character x = 'A';
     char y = x.charValue();
     String z = x.toString();
     this.buff = String.format("valueOf: %c, charValue: %c, toString: %s",
@@ -90,7 +90,7 @@ class IntegerCreation
   private String buff = null;
 
   public IntegerCreation() {
-    Integer x = Integer.valueOf(42);
+    Integer x = 42;
     int y = x.intValue();
     String z = x.toString();
     this.buff = String.format("valueOf: %d, intValue: %d, toString: %s",
@@ -126,7 +126,7 @@ class DoubleCreation
   private String buff = null;
 
   public DoubleCreation() {
-    Double x = Double.valueOf(3.14);
+    Double x = 3.14;
     double y = x.doubleValue();
     String z = x.toString();
     this.buff = String.format("valueOf: %.2f, doubleValue: %.2f, toString: %s",

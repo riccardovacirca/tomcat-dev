@@ -28,10 +28,7 @@ class CharArray
 
   public CharArray() {
     {
-      char[] x = new char[3];
-      x[0] = 'A';
-      x[1] = 'B';
-      x[2] = 'C';
+      char[] x = {'A', 'B', 'C'};
       this.buff = String.format("[%c, %c, %c]", x[0], x[1], x[2]);
     }
     this.buff += "\n";
@@ -52,10 +49,7 @@ class IntArray
 
   public IntArray() {
     {
-      int[] x = new int[3];
-      x[0] = 10;
-      x[1] = 20;
-      x[2] = 30;
+      int[] x = {10, 20, 30};
       this.buff = String.format("[%d, %d, %d]", x[0], x[1], x[2]);
     }
     this.buff += "\n";
@@ -76,10 +70,7 @@ class DoubleArray
 
   public DoubleArray() {
     {
-      double[] x = new double[3];
-      x[0] = 1.1;
-      x[1] = 2.2;
-      x[2] = 3.3;
+      double[] x = {1.1, 2.2, 3.3};
       this.buff = String.format("[%.1f, %.1f, %.1f]", x[0], x[1], x[2]);
     }
     this.buff += "\n";
