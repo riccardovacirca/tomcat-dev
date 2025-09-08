@@ -1,4 +1,8 @@
+<!-- ======================================================================= -->
+
 # Java Tutorial
+
+<!-- ======================================================================= -->
 
 ## Table of Contents
 
@@ -9,8 +13,10 @@
 - [Code Blocks](#code-blocks)
 - [Exception Handling](#exception-handling)
 - [Classes and Objects](#classes-and-objects)
-- [Inheritance and Polymorphism](#inheritance-and-polymorphism)
-- [Interfaces and Abstract Classes](#interfaces-and-abstract-classes)
+- [Inheritance](#inheritance)
+- [Interfaces](#interfaces)
+
+<!-- ======================================================================= -->
 
 ## Simple HelloWorld Message
 
@@ -128,6 +134,8 @@ Complete program demonstrating basic class creation, object instantiation, and o
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
 ## Primitive Types and Wrappers
 
 Source file: `examples/java/Example02.java`
@@ -233,6 +241,8 @@ x = 1.1, y = 2.2, z = 3.3
 Shows the output comparing primitive types with their corresponding wrapper classes.
 
 [↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
 
 ## Arrays and Arrays Utilities
 
@@ -367,6 +377,8 @@ z after fill: [0, 0, 0]
 Complete output showing array operations and utility method results.
 
 [↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
 
 ## Wrapper Class Methods
 
@@ -523,6 +535,8 @@ Complete output showing wrapper class method functionality.
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
 ## Code Blocks
 
 Source file: `examples/java/Example05.java`
@@ -658,6 +672,8 @@ Shows execution order: static → instance → constructor → method blocks.
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
 ## Exception Handling
 
 Source file: `examples/java/Example06.java`
@@ -764,11 +780,13 @@ Shows various exception handling scenarios and their corresponding output messag
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
 ## Classes and Objects
 
 Source file: `examples/java/Example07.java`
 
-This example demonstrates essential Java class and object concepts. It covers basic class creation, constructors and field initialization, and object interaction through methods. The code focuses on practical object-oriented programming techniques commonly used in Java applications.
+This example demonstrates essential Java class and object concepts. It covers basic class creation, constructors and field initialization, object interaction through methods, and access modifiers. The code focuses on practical object-oriented programming techniques commonly used in Java applications.
 
 ### BasicClass - Defining a Class and Creating Objects
 
@@ -842,6 +860,22 @@ class ObjectInteraction {
 }
 ```
 
+### AccessModifiers - Controlling Visibility
+
+Shows how `public`, `private`, and `protected` control access to fields and methods in a class.
+
+```java
+class AccessModifiers {
+  public int publicValue = 1;        // visible everywhere
+  protected int protectedValue = 2;  // visible in same package and subclasses
+  private int privateValue = 3;      // visible only in this class
+
+  public int getPrivateValue() {
+    return this.privateValue;
+  }
+}
+```
+
 ### Expected Classes and Objects Output
 
 ```
@@ -850,11 +884,16 @@ Coordinates: (0, 0)
 Coordinates: (3, 0)
 Coordinates: (3, 4)
 Sum calculated: 12
+Access public: 1
+Access protected: 2
+Access private (via getter): 3
 ```
 
-Shows how classes are defined, instantiated, and used to encapsulate data and behavior in Java.  
+Shows how classes are defined, instantiated, and used to encapsulate data and behavior in Java, with access modifiers controlling visibility.  
 
 [↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
 
 ## Inheritance
 
@@ -919,6 +958,88 @@ Shows basic inheritance and method overriding in Java.
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
+## Static Members
+
+Source file: `examples/java/Example11.java`
+
+This example demonstrates the use of static fields, methods, and blocks in Java. It focuses on shared data, utility methods, and class-level initialization.
+
+### Static Fields - Shared Across All Instances
+
+Shows how a static field is shared among all objects of a class.
+
+```java
+class Counter {
+  public static int count = 0;
+
+  public Counter() {
+    count++;
+  }
+}
+```
+
+### Static Methods - Utility Functions
+
+Demonstrates methods that can be called without creating an instance of the class.
+
+```java
+class MathHelper {
+  public static int square(int x) {
+    return x * x;
+  }
+}
+```
+
+### Static Blocks - Class Initialization
+
+Shows a static block that runs once when the class is loaded.
+
+```java
+class Config {
+  public static String VERSION;
+
+  static {
+    VERSION = "1.0.0";
+    System.out.println("Config loaded: version " + VERSION);
+  }
+}
+```
+
+### Using Static Members
+
+```java
+public class StaticExample {
+  public static void main(String[] args) {
+    System.out.println("Initial count: " + Counter.count);
+    new Counter();
+    new Counter();
+    System.out.println("Count after creating 2 objects: " + Counter.count);
+
+    int sq = MathHelper.square(5);
+    System.out.println("Square of 5 is " + sq);
+
+    // Trigger static block
+    String v = Config.VERSION;
+  }
+}
+```
+
+### Expected Static Members Output
+
+```
+Initial count: 0
+Count after creating 2 objects: 2
+Square of 5 is 25
+Config loaded: version 1.0.0
+```
+
+Shows how static fields, methods, and blocks are used for class-level data and behavior in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
 
 ## Interfaces
 
@@ -974,7 +1095,358 @@ Shows how interfaces define contracts and how classes can implement one or more 
 
 [↑ Back to Contents](#table-of-contents)
 
+<!-- ======================================================================= -->
+
+## Packages and Imports
+
+Source file: `examples/java/Example10.java`
+
+This example demonstrates how to organize Java classes into packages and how to use `import` statements to access classes from other packages. The code focuses on practical package structuring and class reuse.
+
+### Defining a Package
+
+Shows how to declare a package at the top of a Java source file.
+
+```java
+// File: myapp/util/MathUtils.java
+package myapp.util;
+
+public class MathUtils {
+  public static int square(int x) {
+    return x * x;
+  }
+}
+```
+
+### Importing Classes from Packages
+
+Demonstrates how to import a class from another package to use it in your code.
+
+```java
+// File: myapp/MainApp.java
+package myapp;
+
+import myapp.util.MathUtils;
+
+public class MainApp {
+  public static void main(String[] args) {
+    int num = 5;
+    int sq = MathUtils.square(num);
+    System.out.println("Square of " + num + " is " + sq);
+  }
+}
+```
+
+### Using Fully Qualified Class Names
+
+Shows an alternative to `import` by using the full package path.
+
+```java
+public class FullyQualifiedExample {
+  public static void main(String[] args) {
+    int num = 3;
+    int sq = myapp.util.MathUtils.square(num);
+    System.out.println("Square of " + num + " is " + sq);
+  }
+}
+```
+
+### Expected Packages and Imports Output
+
+```
+Square of 5 is 25
+Square of 3 is 9
+```
+
+Shows how to organize classes into packages, import them for reuse, and use fully qualified names in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Enums
+
+Source file: `examples/java/Example12.java`
+
+This example demonstrates Java enumerations (enums). It covers defining enums, adding fields and methods, and using enums in classes. The code focuses on practical use of enums for fixed sets of constants.
+
+### Defining a Simple Enum
+
+Shows how to declare an enum with a set of constant values.
+
+```java
+enum Day {
+  MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+}
+```
+
+### Using Enums in a Class
+
+Demonstrates using an enum as a field and in methods.
+
+```java
+class Schedule {
+  private Day day;
+
+  public Schedule(Day day) {
+    this.day = day;
+  }
+
+  public String getMessage() {
+    return "Today is " + this.day;
+  }
+}
+```
+
+### Enum with Fields and Methods
+
+Shows how to associate additional data and behavior with enum values.
+
+```java
+enum Status {
+  NEW(1), IN_PROGRESS(2), DONE(3);
+
+  private int code;
+
+  Status(int code) {
+    this.code = code;
+  }
+
+  public int getCode() {
+    return this.code;
+  }
+}
+```
+
+### Using Enums
+
+```java
+public class EnumExample {
+  public static void main(String[] args) {
+    Schedule sched = new Schedule(Day.MONDAY);
+    System.out.println(sched.getMessage());
+
+    Status s = Status.IN_PROGRESS;
+    System.out.println("Status: " + s + ", code: " + s.getCode());
+  }
+}
+```
+
+### Expected Enums Output
+
+```
+Today is MONDAY
+Status: IN_PROGRESS, code: 2
+```
+
+Shows how enums define a fixed set of constants, can carry data and methods, and are used in Java classes.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Collections: List
+
+Source file: `examples/java/Example13.java`
+
+This example demonstrates basic usage of the `List` interface in Java. It covers creating a list, adding and retrieving elements, and iterating over the list. The code focuses on essential patterns commonly used in Java applications.
+
+### Creating and Populating a List
+
+Shows how to create an `ArrayList` and add elements to it.
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+class ListExample {
+  public static void main(String[] args) {
+    List<String> fruits = new ArrayList<>();
+    fruits.add("Apple");
+    fruits.add("Banana");
+    fruits.add("Cherry");
+
+    System.out.println("First fruit: " + fruits.get(0));
+  }
+}
+```
+
+### Iterating Over a List
+
+Demonstrates iterating through elements using a for-each loop.
+
+```java
+for (String fruit : fruits) {
+  System.out.println(fruit);
+}
+```
+
+### Common List Operations
+
+Shows basic list operations like removing and checking elements.
+
+```java
+fruits.remove("Banana");
+if (fruits.contains("Cherry")) {
+  System.out.println("Cherry is in the list");
+}
+```
+
+### Expected List Output
+
+```
+First fruit: Apple
+Apple
+Banana
+Cherry
+Cherry is in the list
+```
+
+Shows how to create, populate, access, and manipulate a list in Java, demonstrating essential usage of the `List` interface.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Collections: Map
+
+Source file: `examples/java/Example14.java`
+
+This example demonstrates basic usage of the `Map` interface in Java. It covers creating a map, adding and retrieving key-value pairs, and iterating over entries. The code focuses on essential patterns commonly used in Java applications.
+
+### Creating and Populating a Map
+
+Shows how to create a `HashMap` and store key-value pairs.
+
+```java
+import java.util.HashMap;
+import java.util.Map;
+
+class MapExample {
+  public static void main(String[] args) {
+    Map<String, Integer> scores = new HashMap<>();
+    scores.put("Alice", 85);
+    scores.put("Bob", 92);
+    scores.put("Charlie", 78);
+
+    System.out.println("Score of Alice: " + scores.get("Alice"));
+  }
+}
+```
+
+### Iterating Over Map Entries
+
+Demonstrates how to iterate over keys and values in a map.
+
+```java
+for (Map.Entry<String, Integer> entry : scores.entrySet()) {
+  System.out.println(entry.getKey() + " -> " + entry.getValue());
+}
+```
+
+### Checking for Keys and Values
+
+Shows common utility methods of a map.
+
+```java
+if (scores.containsKey("Bob")) {
+  System.out.println("Bob is in the map with score " + scores.get("Bob"));
+}
+
+if (scores.containsValue(78)) {
+  System.out.println("Someone scored 78");
+}
+```
+
+### Expected Map Output
+
+```
+Score of Alice: 85
+Alice -> 85
+Bob -> 92
+Charlie -> 78
+Bob is in the map with score 92
+Someone scored 78
+```
+
+Shows how to create, populate, access, and iterate over a map in Java, demonstrating essential usage of the `Map` interface.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Annotations: Basic Usage
+
+Source file: `examples/java/Example15.java`
+
+This example demonstrates basic usage of Java annotations. It covers `@Override` for method overriding and `@Deprecated` to mark deprecated elements. The code focuses on practical, commonly used annotations in Java applications.
+
+### @Override - Indicating Method Overriding
+
+Shows how to use `@Override` to ensure a subclass correctly overrides a method from its parent class.
+
+```java
+class Animal {
+  public String speak() {
+    return "Some generic sound";
+  }
+}
+
+class Dog extends Animal {
+  @Override
+  public String speak() {
+    return "Woof!";
+  }
+}
+```
+
+### @Deprecated - Marking Deprecated Methods
+
+Demonstrates marking methods as deprecated to indicate they should not be used.
+
+```java
+class OldLibrary {
+  @Deprecated
+  public void oldMethod() {
+    System.out.println("This method is outdated");
+  }
+
+  public void newMethod() {
+    System.out.println("Use this method instead");
+  }
+}
+```
+
+### Using Annotations
+
+```java
+public class AnnotationExample {
+  public static void main(String[] args) {
+    Dog dog = new Dog();
+    System.out.println(dog.speak());
+
+    OldLibrary lib = new OldLibrary();
+    lib.oldMethod();  // Compiler warning: method is deprecated
+    lib.newMethod();
+  }
+}
+```
+
+### Expected Annotations Output
+
+```
+Woof!
+This method is outdated
+Use this method instead
+```
+
+Shows how to use `@Override` to validate method overriding and `@Deprecated` to indicate outdated methods in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
 ---
 
-Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
-License: GNU GPL Version 2. See LICENSE
+&copy;2018-2025 Riccardo Vacirca. All right reserved.  
+GNU GPL Version 2. See LICENSE

@@ -1,15 +1,14 @@
 /* *****************************************************************************
- * Example08 - Inheritance and Polymorphism
+ * Example08 - Inheritance
  * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
  * License: GNU GPL Version 2. See LICENSE
  *
  * Compile: javac Example08.java
  * Run: java Example08
  * ---
- * Buddy barks
- * Whiskers meows
- * Buddy barks
- * Whiskers meows
+ * Animal name: Rex
+ * Rex barks loudly
+ * Cat name: Milo
  * *****************************************************************************
 */
 
@@ -21,8 +20,8 @@ class Animal {
     this.name = name;
   }
 
-  public String speak() {
-    return this.name + " makes a sound";
+  public String info() {
+    return "Animal name: " + this.name;
   }
 }
 
@@ -32,9 +31,8 @@ class Dog extends Animal {
     super(name);
   }
 
-  @Override
-  public String speak() {
-    return this.name + " barks";
+  public String bark() {
+    return this.name + " barks loudly";
   }
 }
 
@@ -45,39 +43,19 @@ class Cat extends Animal {
   }
 
   @Override
-  public String speak() {
-    return this.name + " meows";
-  }
-}
-
-/** PolymorphismDemo class */
-class PolymorphismDemo {
-  private String buff = null;
-
-  public PolymorphismDemo() {
-    Animal[] animals = {
-      new Dog("Buddy"),
-      new Cat("Whiskers")
-    };
-    
-    this.buff = "";
-    for (Animal animal : animals) {
-      this.buff += animal.speak() + "\n";
-    }
-    this.buff = this.buff.trim();
-  }
-
-  public String toString() {
-    return this.buff;
+  public String info() {
+    return "Cat name: " + this.name;
   }
 }
 
 public class Example08 {
   public static void main(String[] args) {
     System.out.printf("\n");
-    System.out.printf("%s\n", new Dog("Buddy").speak());
-    System.out.printf("%s\n", new Cat("Whiskers").speak());
-    System.out.printf("%s\n", new PolymorphismDemo());
+    Dog rex = new Dog("Rex");
+    System.out.printf("%s\n", rex.info());
+    System.out.printf("%s\n", rex.bark());
+    Cat milo = new Cat("Milo");
+    System.out.printf("%s\n", milo.info());
     System.out.printf("\n");
   }
 }
