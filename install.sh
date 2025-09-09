@@ -61,23 +61,23 @@ LOG_ROTATION=daily
 POSTGRES_ENABLED=false
 POSTGRES_CONTAINER_NAME=tomcat-dev-postgres
 POSTGRES_VERSION=latest
-POSTGRES_PORT=5432
+POSTGRES_PORT=15432
 POSTGRES_DB=devdb
 POSTGRES_USER=devuser
 POSTGRES_PASSWORD=devpass123
 POSTGRES_ROOT_PASSWORD=rootpass123
-POSTGRES_DATA_DIR=postgres-data
+POSTGRES_DATA_DIR=/var/lib/postgresql/tomcat-dev
 
 # MariaDB Configuration (optional)
 MARIADB_ENABLED=false
 MARIADB_CONTAINER_NAME=tomcat-dev-mariadb
 MARIADB_VERSION=latest
-MARIADB_PORT=3306
+MARIADB_PORT=13306
 MARIADB_DATABASE=devdb
 MARIADB_USER=devuser
 MARIADB_PASSWORD=devpass123
 MARIADB_ROOT_PASSWORD=rootpass123
-MARIADB_DATA_DIR=mariadb-data
+MARIADB_DATA_DIR=/var/lib/mysql/tomcat-dev
 
 # SQLite Configuration (optional)
 SQLITE_ENABLED=false
@@ -367,8 +367,9 @@ pull_postgres_image() {
 create_postgres_directories() {
   POSTGRES_DATA_DIR=$(grep POSTGRES_DATA_DIR .env | cut -d= -f2)
   print_info "Creating PostgreSQL data directory..."
-  mkdir -p "$POSTGRES_DATA_DIR"
-  print_info "PostgreSQL directories created"
+  sudo mkdir -p "$POSTGRES_DATA_DIR"
+  sudo chown -R 999:999 "$POSTGRES_DATA_DIR"
+  print_info "PostgreSQL directories created: $POSTGRES_DATA_DIR"
 }
 
 # Start PostgreSQL container
@@ -382,7 +383,6 @@ start_postgres_container() {
   POSTGRES_ROOT_PASSWORD=$(grep POSTGRES_ROOT_PASSWORD .env | cut -d= -f2)
   POSTGRES_DATA_DIR=$(grep POSTGRES_DATA_DIR .env | cut -d= -f2)
   NETWORK_NAME=$(grep NETWORK_NAME .env | cut -d= -f2)
-  PROJECT_DIR=$(pwd)
   
   # Check if container is already running (idempotency)
   if docker ps --format 'table {{.Names}}' | grep -q "^${POSTGRES_CONTAINER_NAME}$"; then
@@ -407,7 +407,7 @@ start_postgres_container() {
     -e POSTGRES_USER="${POSTGRES_USER}" \
     -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
     -e POSTGRES_INITDB_ROOT_PASSWORD="${POSTGRES_ROOT_PASSWORD}" \
-    -v "${PROJECT_DIR}/${POSTGRES_DATA_DIR}:/var/lib/postgresql/data" \
+    -v "${POSTGRES_DATA_DIR}:/var/lib/postgresql/data" \
     "postgres:${POSTGRES_VERSION}"
   
   print_info "PostgreSQL container started successfully"
@@ -483,8 +483,9 @@ pull_mariadb_image() {
 create_mariadb_directories() {
   MARIADB_DATA_DIR=$(grep MARIADB_DATA_DIR .env | cut -d= -f2)
   print_info "Creating MariaDB data directory..."
-  mkdir -p "$MARIADB_DATA_DIR"
-  print_info "MariaDB directories created"
+  sudo mkdir -p "$MARIADB_DATA_DIR"
+  sudo chown -R 999:999 "$MARIADB_DATA_DIR"
+  print_info "MariaDB directories created: $MARIADB_DATA_DIR"
 }
 
 # Start MariaDB container
@@ -498,7 +499,6 @@ start_mariadb_container() {
   MARIADB_ROOT_PASSWORD=$(grep MARIADB_ROOT_PASSWORD .env | cut -d= -f2)
   MARIADB_DATA_DIR=$(grep MARIADB_DATA_DIR .env | cut -d= -f2)
   NETWORK_NAME=$(grep NETWORK_NAME .env | cut -d= -f2)
-  PROJECT_DIR=$(pwd)
   
   # Check if container is already running (idempotency)
   if docker ps --format 'table {{.Names}}' | grep -q "^${MARIADB_CONTAINER_NAME}$"; then
@@ -523,7 +523,7 @@ start_mariadb_container() {
     -e MARIADB_USER="${MARIADB_USER}" \
     -e MARIADB_PASSWORD="${MARIADB_PASSWORD}" \
     -e MARIADB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD}" \
-    -v "${PROJECT_DIR}/${MARIADB_DATA_DIR}:/var/lib/mysql" \
+    -v "${MARIADB_DATA_DIR}:/var/lib/mysql" \
     "mariadb:${MARIADB_VERSION}"
   
   print_info "MariaDB container started successfully"
