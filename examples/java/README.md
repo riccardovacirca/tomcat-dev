@@ -14,7 +14,15 @@
 - [Exception Handling](#exception-handling)
 - [Classes and Objects](#classes-and-objects)
 - [Inheritance](#inheritance)
+- [Static Members](#static-members)
 - [Interfaces](#interfaces)
+- [Packages and Imports](#packages-and-imports)
+- [Enums](#enums)
+- [Collections: List](#collections-list)
+- [Collections: Map](#collections-map)
+- [Annotations: Basic Usage](#annotations-basic-usage)
+- [Records](#records)
+- [Memory Management](#memory-management)
 
 <!-- ======================================================================= -->
 
@@ -1441,6 +1449,340 @@ Use this method instead
 ```
 
 Shows how to use `@Override` to validate method overriding and `@Deprecated` to indicate outdated methods in Java.  
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Records
+
+Source file: `examples/java/Example16.java`
+
+This example demonstrates Java Records, a feature introduced in Java 14 that provides a concise way to create immutable data classes. Records automatically generate constructor, getters, equals(), hashCode(), and toString() methods, reducing boilerplate code significantly. The code shows different ways to create and use records, including records with validation, methods, and static factory methods.
+
+### Simple Record Declaration
+
+Shows the basic syntax for declaring a record with automatic method generation.
+
+```java
+public record Person(String name, int age) {}
+```
+
+Defines a record with two fields. The compiler automatically generates:
+- Constructor: `Person(String name, int age)`
+- Getters: `name()` and `age()` 
+- `equals()`, `hashCode()`, `toString()` methods
+
+### Record with Validation
+
+Demonstrates how to add validation in record constructors using compact constructor syntax.
+
+```java
+public record Point(int x, int y) {
+  public Point {
+    if (x < 0 || y < 0) {
+      throw new IllegalArgumentException("Coordinates must be non-negative");
+    }
+  }
+}
+```
+
+### Record with Methods
+
+Shows how to add instance and static methods to records while maintaining immutability.
+
+```java
+public record Rectangle(double width, double height) {
+  public double area() {
+    return width * height;
+  }
+  
+  public static Rectangle square(double side) {
+    return new Rectangle(side, side);
+  }
+}
+```
+
+### Record vs Traditional Class
+
+Compares a traditional class implementation with its equivalent record version.
+
+```java
+// Traditional class (verbose)
+public class TodoTraditional {
+  private final Long id;
+  private final String title;
+  private final boolean completed;
+  
+  public TodoTraditional(Long id, String title, boolean completed) {
+    this.id = id;
+    this.title = title;
+    this.completed = completed;
+  }
+  
+  public Long getId() { return id; }
+  public String getTitle() { return title; }
+  public boolean isCompleted() { return completed; }
+  
+  // equals, hashCode, toString methods...
+}
+
+// Record equivalent (concise)
+public record Todo(Long id, String title, boolean completed) {}
+```
+
+### Records with Collections
+
+Demonstrates using records to model data structures with collections and nested records.
+
+```java
+public record Book(String title, String author, List<String> genres) {
+  public Book {
+    genres = List.copyOf(genres); // Defensive copy for immutability
+  }
+  
+  public boolean hasGenre(String genre) {
+    return genres.contains(genre);
+  }
+}
+
+public record Library(String name, List<Book> books) {
+  public long bookCount() {
+    return books.size();
+  }
+  
+  public List<Book> booksByAuthor(String author) {
+    return books.stream()
+               .filter(book -> book.author().equals(author))
+               .toList();
+  }
+}
+```
+
+### Expected Records Output
+
+```
+Person: Person[name=Alice, age=30]
+Point: Point[x=10, y=20]
+Rectangle area: 200.0
+Square area: 25.0
+Traditional vs Record equality: true
+Book genres: [Fiction, Mystery]
+Library has 3 books
+Books by Jane Doe: [Book[title=Mystery Novel, author=Jane Doe, genres=[Mystery, Thriller]]]
+```
+
+Shows various record operations including automatic toString(), method calls, and collection handling.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Memory Management
+
+Source file: `examples/java/Example17.java`
+
+This example demonstrates Java memory management concepts including stack vs heap allocation, object references, garbage collection behavior, and memory optimization techniques. The code shows how primitive variables, objects, method calls, and different data structures affect memory usage and performance. Understanding these concepts is crucial for writing efficient Java applications and avoiding memory leaks.
+
+### Stack vs Heap Allocation
+
+Shows the difference between stack-allocated primitives and heap-allocated objects.
+
+```java
+public class MemoryDemo {
+    public void stackVsHeap() {
+        // Stack allocation - primitives
+        int primitive = 42;           // Stored directly on stack
+        boolean flag = true;          // Stored directly on stack
+        char letter = 'A';            // Stored directly on stack
+        
+        // Heap allocation - objects
+        String text = "Hello";        // Reference on stack, object on heap
+        Integer wrapper = 100;        // Reference on stack, object on heap
+        int[] array = {1, 2, 3};     // Reference on stack, array on heap
+    }
+}
+```
+
+### Object References and Memory
+
+Demonstrates how object references work and the difference between reference equality and object equality.
+
+```java
+public class ReferenceDemo {
+    public void referenceVsValue() {
+        // Same object reference
+        String str1 = "Hello";
+        String str2 = "Hello";        // String pool - same reference
+        
+        // Different object references
+        String str3 = new String("Hello");  // Force new object on heap
+        String str4 = new String("Hello");  // Another new object on heap
+        
+        // Reference comparison vs content comparison
+        boolean sameRef1 = (str1 == str2);     // true - same reference
+        boolean sameRef2 = (str3 == str4);     // false - different references
+        boolean sameContent = str3.equals(str4); // true - same content
+    }
+}
+```
+
+### Method Call Stack
+
+Shows how method calls create stack frames and how local variables are managed.
+
+```java
+public class StackFrameDemo {
+    public void methodA() {
+        int localVar = 10;            // Stack frame for methodA
+        String localObj = "A";        // Reference in stack, object in heap
+        methodB(localVar);            // New stack frame created
+    }
+    
+    public void methodB(int param) {
+        int anotherVar = param * 2;   // Stack frame for methodB
+        String anotherObj = "B";      // New reference and object
+        methodC();                    // Another stack frame
+    }
+    
+    public void methodC() {
+        // Deepest stack frame
+        int deepVar = 100;
+    }
+    // When methods return, stack frames are popped
+}
+```
+
+### Garbage Collection Behavior
+
+Demonstrates object lifecycle and when objects become eligible for garbage collection.
+
+```java
+public class GarbageCollectionDemo {
+    public void gcExample() {
+        // Object creation
+        StringBuilder sb1 = new StringBuilder("Initial");
+        StringBuilder sb2 = new StringBuilder("Second");
+        
+        // sb1 is eligible for GC after this point
+        sb1 = null;
+        
+        // Reassignment makes original sb2 eligible for GC
+        sb2 = new StringBuilder("Third");
+        
+        // Local method scope - all local references become
+        // eligible for GC when method ends
+    }
+    
+    public String createAndReturn() {
+        String temp = "Temporary";    // Local reference
+        return temp;                  // Object survives method return
+    }
+}
+```
+
+### Memory Optimization Techniques
+
+Shows techniques for efficient memory usage including object pooling and avoiding unnecessary allocations.
+
+```java
+public class MemoryOptimization {
+    // String concatenation - inefficient
+    public String inefficientConcat(String[] words) {
+        String result = "";
+        for (String word : words) {
+            result += word + " ";     // Creates new String objects each time
+        }
+        return result;
+    }
+    
+    // String concatenation - efficient
+    public String efficientConcat(String[] words) {
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            sb.append(word).append(" "); // Reuses same buffer
+        }
+        return sb.toString();
+    }
+    
+    // Object reuse vs recreation
+    public void objectReuse() {
+        // Inefficient - creates new objects
+        for (int i = 0; i < 1000; i++) {
+            List<String> list = new ArrayList<>(); // New object each iteration
+            // ... use list
+        }
+        
+        // More efficient - reuse object
+        List<String> reusableList = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            reusableList.clear();      // Reuse same object
+            // ... use list
+        }
+    }
+}
+```
+
+### Memory Leaks Prevention
+
+Demonstrates common memory leak scenarios and how to prevent them.
+
+```java
+public class MemoryLeakDemo {
+    private List<String> cache = new ArrayList<>();
+    
+    // Memory leak - cache grows indefinitely
+    public void leakyCache(String data) {
+        cache.add(data);              // Never removed
+    }
+    
+    // Fixed - with size limit
+    public void boundedCache(String data) {
+        if (cache.size() > 1000) {
+            cache.remove(0);          // Remove oldest entry
+        }
+        cache.add(data);
+    }
+    
+    // Inner class memory leak
+    public class InnerClass {
+        // Holds implicit reference to outer class
+        private String data;
+        
+        public InnerClass(String data) {
+            this.data = data;
+        }
+    }
+    
+    // Fixed with static inner class
+    public static class StaticInnerClass {
+        // No implicit reference to outer class
+        private String data;
+        
+        public StaticInnerClass(String data) {
+            this.data = data;
+        }
+    }
+}
+```
+
+### Expected Memory Management Output
+
+```
+Stack primitive: 42
+Heap object: Hello World
+Reference equality (string pool): true
+Reference equality (new objects): false
+Content equality: true
+Method call depth: 3
+StringBuilder efficient: Hello World Java Programming
+ArrayList reuse demonstration completed
+Cache size after cleanup: 1000
+Static inner class created without outer reference
+Memory demonstration completed
+```
+
+Shows various aspects of Java memory management including stack/heap allocation, reference handling, and optimization techniques.
 
 [↑ Back to Contents](#table-of-contents)
 
