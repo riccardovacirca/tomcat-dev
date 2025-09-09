@@ -760,14 +760,12 @@ public void businessOperation() throws SQLException {
         username="myuser"
         password="mypass"
         
-        <!-- Pool Configuration -->
         initialSize="5"
         maxTotal="50"
         maxIdle="20"
         minIdle="5"
         maxWaitMillis="30000"
         
-        <!-- Connection Validation -->
         testOnBorrow="true"
         testOnReturn="false"
         testWhileIdle="true"
@@ -776,13 +774,11 @@ public void businessOperation() throws SQLException {
         timeBetweenEvictionRunsMillis="30000"
         minEvictableIdleTimeMillis="300000"
         
-        <!-- Abandoned Connection Recovery -->
         removeAbandonedOnMaintenance="true"
         removeAbandonedOnBorrow="true"
         removeAbandonedTimeout="300"
         logAbandoned="true"
         
-        <!-- Additional Settings -->
         defaultAutoCommit="true"
         defaultReadOnly="false"
         defaultTransactionIsolation="READ_COMMITTED" />

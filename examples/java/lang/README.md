@@ -23,6 +23,9 @@
 - [Annotations: Basic Usage](#annotations-basic-usage)
 - [Records](#records)
 - [Memory Management](#memory-management)
+- [Event Listeners](#event-listeners)
+- [Lambda Expressions](#lambda-expressions)
+- [Application Lifecycle Threading](#application-lifecycle-threading)
 
 <!-- ======================================================================= -->
 
@@ -1783,6 +1786,501 @@ Memory demonstration completed
 ```
 
 Shows various aspects of Java memory management including stack/heap allocation, reference handling, and optimization techniques.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Event Listeners
+
+Source file: `examples/java/Example18.java`
+
+This example demonstrates the event listener pattern in Java, also known as the
+Observer pattern. Event listeners provide a way to implement decoupled
+communication between objects where one object (publisher) notifies multiple
+other objects (listeners) about events without knowing the specific details of
+those listeners. This pattern is fundamental in Java applications, particularly
+in GUI frameworks and web applications where components need to respond to user
+actions or system events.
+
+### Event Class Definition
+
+Base class for all events that extends Java's built-in event infrastructure concepts.
+
+```java
+class AppEvent {
+    private String eventType;
+    private long timestamp;
+    
+    public AppEvent(String eventType) {
+        this.eventType = eventType;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    public String getEventType() { return eventType; }
+    public long getTimestamp() { return timestamp; }
+}
+```
+
+Defines an event with a type identifier and automatic timestamp. Events carry information about what happened and when.
+
+### Event Listener Interface
+
+Contract that all event listeners must implement to receive notifications.
+
+```java
+interface AppEventListener {
+    void onEvent(AppEvent event);
+}
+```
+
+Simple interface with a single method that gets called when an event occurs. This follows the single responsibility principle.
+
+### Concrete Listener Implementation
+
+Example listener that processes events by logging them with a custom name identifier.
+
+```java
+class LoggingListener implements AppEventListener {
+    private String name;
+    
+    public LoggingListener(String name) {
+        this.name = name;
+    }
+    
+    @Override
+    public void onEvent(AppEvent event) {
+        System.out.printf("[%s] Event: %s at %d%n", 
+            name, event.getEventType(), event.getTimestamp());
+    }
+}
+```
+
+Concrete implementation that identifies itself with a name and formats event information for output.
+
+### Event Publisher Pattern
+
+Central class that manages listeners and publishes events to all registered observers.
+
+```java
+class EventPublisher {
+    private List<AppEventListener> listeners = new ArrayList<>();
+    
+    public void addListener(AppEventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void publishEvent(String eventType) {
+        AppEvent event = new AppEvent(eventType);
+        for (AppEventListener listener : listeners) {
+            listener.onEvent(event);
+        }
+    }
+}
+```
+
+### Publisher Registration and Notification
+
+The publisher maintains a list of listeners and notifies them all when events occur.
+
+```java
+// Create event publisher
+EventPublisher publisher = new EventPublisher();
+
+// Register multiple listeners
+publisher.addListener(new LoggingListener("Logger1"));
+publisher.addListener(new LoggingListener("Logger2"));
+
+// Publish events to all registered listeners
+publisher.publishEvent("APPLICATION_STARTED");
+publisher.publishEvent("USER_LOGIN");
+```
+
+### Event Flow Architecture
+
+The event listener pattern follows this execution flow:
+
+1. **Registration**: Listeners register themselves with the publisher
+2. **Event Trigger**: Something happens that needs to notify listeners
+3. **Event Creation**: Publisher creates an event object with relevant data
+4. **Notification**: Publisher calls the listener method on all registered listeners
+5. **Processing**: Each listener processes the event according to its logic
+
+### Benefits and Use Cases
+
+**Decoupling**: Publishers don't need to know about specific listeners, only the interface contract.
+
+**Extensibility**: New listeners can be added without modifying existing code.
+
+**Multiple Responses**: One event can trigger multiple different actions simultaneously.
+
+**Common Applications**:
+- GUI event handling (button clicks, window events)
+- Web application lifecycle events (startup, shutdown)
+- Database change notifications
+- File system monitoring
+- Custom business logic triggers
+
+### Expected Event Listeners Output
+
+```
+=== Simple Event Listener Example ===
+
+[Logger1] Event: APPLICATION_STARTED at 1699123456789
+[Logger2] Event: APPLICATION_STARTED at 1699123456789
+[Logger1] Event: USER_LOGIN at 1699123456790
+[Logger2] Event: USER_LOGIN at 1699123456790
+[Logger1] Event: DATA_PROCESSED at 1699123456791
+[Logger2] Event: DATA_PROCESSED at 1699123456791
+[Logger1] Event: APPLICATION_STOPPED at 1699123456792
+[Logger2] Event: APPLICATION_STOPPED at 1699123456792
+```
+
+Shows how multiple listeners receive and process the same events independently.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Lambda Expressions
+
+Source file: `examples/java/Example19.java`
+
+This example demonstrates lambda expressions in Java, a feature introduced in Java 8 that enables functional programming concepts. Lambda expressions provide a concise way to represent anonymous functions and are particularly useful for implementing functional interfaces, working with collections, and creating cleaner, more readable code. They eliminate the verbosity of anonymous inner classes while maintaining the same functionality and type safety.
+
+### Lambda Syntax and Basic Usage
+
+Lambda expressions use the arrow operator (->) to separate parameters from the body.
+
+```java
+// Basic lambda syntax: (parameters) -> expression
+Runnable simpleTask = () -> System.out.println("Simple lambda task executed");
+
+// Lambda with parameters
+MathOperation addition = (a, b) -> a + b;
+MathOperation multiplication = (a, b) -> a * b;
+```
+
+The syntax consists of three parts: parameter list in parentheses, arrow operator, and the body which can be an expression or statement block.
+
+### Traditional vs Lambda Approach
+
+Comparison between anonymous inner classes and lambda expressions for cleaner code.
+
+```java
+// Traditional anonymous inner class approach
+Thread traditionalWorker = new Thread(new Runnable() {
+    @Override
+    public void run() {
+        System.out.println("Traditional worker started");
+        System.out.println("Traditional worker finished");
+    }
+});
+
+// Lambda expression approach - much more concise
+Thread lambdaWorker = new Thread(() -> {
+    for (int i = 1; i <= 5; i++) {
+        System.out.println("Lambda worker dice: passo " + i);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+        }
+    }
+    System.out.println("Lambda worker terminato");
+});
+```
+
+Lambda expressions significantly reduce boilerplate code while maintaining the same functionality and readability.
+
+### Functional Interface Requirements
+
+Lambda expressions can only be used with functional interfaces (interfaces with exactly one abstract method).
+
+```java
+@FunctionalInterface
+interface MathOperation {
+    int operate(int a, int b);
+}
+
+@FunctionalInterface
+interface StringProcessor {
+    String process(String input);
+}
+```
+
+The `@FunctionalInterface` annotation ensures compile-time verification that the interface has exactly one abstract method.
+
+### Lambda with Multiple Statements
+
+When lambda body contains multiple statements, use curly braces and explicit return statements.
+
+```java
+StringProcessor processor = (str) -> {
+    String result = str.toUpperCase();
+    result = result.trim();
+    return result + "!";
+};
+
+System.out.println("Processed: " + processor.process("  hello world  "));
+```
+
+Multi-statement lambdas require explicit return statements and proper block syntax with curly braces.
+
+### Thread Creation with Lambda
+
+Lambda expressions excel in thread creation, making concurrent programming more readable.
+
+```java
+Thread worker = new Thread(() -> {
+    for (int i = 1; i <= 5; i++) {
+        System.out.println("Worker dice: passo " + i);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    System.out.println("Worker terminato");
+});
+
+worker.start();
+worker.join();
+```
+
+### Method References and Higher-Order Functions
+
+Lambda expressions enable functional programming patterns with method passing as parameters.
+
+```java
+private static int calculate(int a, int b, MathOperation operation) {
+    return operation.operate(a, b);
+}
+
+// Usage with lambda expressions
+int sum = calculate(5, 3, (a, b) -> a + b);
+int product = calculate(5, 3, (a, b) -> a * b);
+```
+
+This pattern allows methods to accept behavior as parameters, enabling flexible and reusable code design.
+
+### Expected Lambda Expressions Output
+
+```
+=== Lambda Expressions with Threading ===
+
+Traditional worker started
+Traditional worker finished
+
+Lambda worker dice: passo 1
+Main continua a girare...
+Lambda worker dice: passo 2
+Lambda worker dice: passo 3
+Lambda worker dice: passo 4
+Lambda worker dice: passo 5
+Lambda worker terminato
+
+Main terminato
+
+=== Lambda Expressions Basics ===
+
+Simple lambda task executed
+Addition: 5 + 3 = 8
+Multiplication: 5 * 3 = 15
+Processed: HELLO WORLD!
+```
+
+Shows lambda expressions in action with threading, mathematical operations, and string processing examples.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Application Lifecycle Threading
+
+Source file: `examples/java/Example20.java`
+
+This example demonstrates advanced threading patterns integrated with application lifecycle management using lambda expressions. It builds upon the previous lambda concepts to show how background threads can be properly managed throughout an application's lifecycle, from startup to graceful shutdown. This pattern is essential for building robust applications that run long-running background tasks, such as data processing, health monitoring, or cleanup operations, while ensuring proper resource management and clean termination.
+
+### Background Service with Lambda Threading
+
+A service class that encapsulates background thread management with lambda-based thread creation.
+
+```java
+class BackgroundService {
+    private Thread workerThread;
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            workerThread = new Thread(() -> {
+                while (running.get()) {
+                    try {
+                        System.out.println("Worker attivo...");
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            });
+            workerThread.start();
+        }
+    }
+}
+```
+
+Uses AtomicBoolean for thread-safe state management and lambda expressions for clean thread creation syntax.
+
+### Graceful Thread Termination
+
+Proper shutdown mechanism that allows threads to complete their work gracefully before termination.
+
+```java
+public void stop() {
+    if (running.compareAndSet(true, false)) {
+        if (workerThread != null && workerThread.isAlive()) {
+            workerThread.interrupt();
+            
+            try {
+                workerThread.join(5000); // 5 second timeout
+                if (workerThread.isAlive()) {
+                    System.out.println("Warning: worker did not stop gracefully");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+}
+```
+
+The shutdown process uses interrupt() to signal termination and join() with timeout to wait for graceful completion.
+
+### Application Context Management
+
+Centralized management of multiple background services with coordinated lifecycle control.
+
+```java
+class ApplicationContext {
+    private final BackgroundService[] services;
+    
+    public void start() {
+        for (BackgroundService service : services) {
+            service.start();
+        }
+    }
+    
+    public void stop() {
+        for (BackgroundService service : services) {
+            service.stop();
+        }
+    }
+}
+```
+
+The application context manages multiple services as a cohesive unit, ensuring all background tasks start and stop together.
+
+### Lifecycle Event Integration
+
+Integration with application lifecycle events for automatic background thread management.
+
+```java
+class BackgroundThreadListener implements ApplicationLifecycleListener {
+    private ApplicationContext applicationContext;
+    
+    @Override
+    public void onApplicationStart() {
+        applicationContext = new ApplicationContext();
+        applicationContext.start();
+        
+        // Add shutdown hook for graceful termination
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (applicationContext != null) {
+                applicationContext.stop();
+            }
+        }));
+    }
+    
+    @Override
+    public void onApplicationStop() {
+        if (applicationContext != null) {
+            applicationContext.stop();
+        }
+    }
+}
+```
+
+### Shutdown Hook Integration
+
+JVM shutdown hook ensures background threads terminate cleanly even during unexpected application shutdown.
+
+```java
+Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    System.out.println("Shutdown hook triggered");
+    if (applicationContext != null) {
+        applicationContext.stop();
+    }
+}));
+```
+
+Shutdown hooks provide a safety net for resource cleanup when the application terminates unexpectedly.
+
+### Thread Safety with AtomicBoolean
+
+Thread-safe state management using atomic operations instead of synchronized blocks.
+
+```java
+private final AtomicBoolean running = new AtomicBoolean(false);
+
+// Thread-safe state changes
+if (running.compareAndSet(false, true)) {
+    // Start logic - only executes if previous state was false
+}
+
+if (running.compareAndSet(true, false)) {
+    // Stop logic - only executes if previous state was true
+}
+```
+
+AtomicBoolean provides lock-free thread safety for simple boolean state management.
+
+### Expected Application Lifecycle Threading Output
+
+```
+=== Application Lifecycle Threading Example ===
+
+Application lifecycle event: START
+=== Application Context Starting ===
+DataProcessor worker started
+HealthChecker worker started
+LogCleaner worker started
+Application context started with 3 background services
+
+Application running... (will stop after 15 seconds)
+
+DataProcessor worker attivo... [DataProcessor-Worker]
+HealthChecker worker attivo... [HealthChecker-Worker]
+LogCleaner worker attivo... [LogCleaner-Worker]
+DataProcessor worker attivo... [DataProcessor-Worker]
+HealthChecker worker attivo... [HealthChecker-Worker]
+LogCleaner worker attivo... [LogCleaner-Worker]
+
+Application lifecycle event: STOP
+=== Application Context Stopping ===
+DataProcessor worker interrupted
+DataProcessor worker terminato
+HealthChecker worker interrupted
+HealthChecker worker terminato
+LogCleaner worker interrupted
+LogCleaner worker terminato
+Application context stopped
+
+Main application terminated
+```
+
+Shows complete lifecycle management with multiple background services starting, running, and terminating gracefully in response to application events.
 
 [↑ Back to Contents](#table-of-contents)
 
