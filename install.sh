@@ -120,10 +120,23 @@ create_gitignore() {
 !LICENSE
 !examples/
 !examples/**
+!projects/
+!projects/**
 EOF
     print_info ".gitignore file created"
   else
     print_info ".gitignore already exists, skipping creation"
+  fi
+}
+
+# Create projects folder
+create_projects_folder() {
+  if [ ! -d "projects" ]; then
+    print_info "Creating projects folder..."
+    mkdir -p projects
+    print_info "projects folder file created"
+  else
+    print_info "projects folder already exists, skipping creation"
   fi
 }
 
@@ -298,7 +311,8 @@ install_dev_tools() {
   # Check if tools are already installed (idempotency)
   if docker exec "${CONTAINER_NAME}" which mvn > /dev/null 2>&1 && \
     docker exec "${CONTAINER_NAME}" which make > /dev/null 2>&1 && \
-    docker exec "${CONTAINER_NAME}" which git > /dev/null 2>&1; then
+    docker exec "${CONTAINER_NAME}" which git > /dev/null 2>&1 && \
+    docker exec "${CONTAINER_NAME}" which psql > /dev/null 2>&1; then
     print_info "Development tools already installed, skipping installation"
   else
     print_info "Installing missing development tools..."
@@ -311,7 +325,8 @@ install_dev_tools() {
       git \
       maven \
       wget \
-      curl > /dev/null 2>&1; then
+      curl \
+      postgresql-client > /dev/null 2>&1; then
       print_info "Development tools packages installed"
     else
       print_warn "Some development tools packages may have failed to install"
@@ -738,6 +753,7 @@ main() {
   check_docker
   create_basic_directories
   create_gitignore
+  create_projects_folder
   create_docker_network
   pull_tomcat_image
   copy_default_config

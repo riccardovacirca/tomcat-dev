@@ -26,6 +26,7 @@
 - [Event Listeners](#event-listeners)
 - [Lambda Expressions](#lambda-expressions)
 - [Application Lifecycle Threading](#application-lifecycle-threading)
+- [File I/O and Resource Reading](#file-io-and-resource-reading)
 
 <!-- ======================================================================= -->
 
@@ -2281,6 +2282,102 @@ Main application terminated
 ```
 
 Shows complete lifecycle management with multiple background services starting, running, and terminating gracefully in response to application events.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## File I/O and Resource Reading
+
+Source file: `examples/java/Example21.java`
+
+This example demonstrates essential file input/output operations in Java, focusing on reading files from classpath resources and text processing. It covers the fundamental patterns needed for reading configuration files, SQL migration files, and other resources packaged with applications.
+
+### Reading from Classpath Resources
+
+Access files packaged within your application JAR using the ClassLoader resource mechanism.
+
+```java
+InputStream inputStream = MyClass.class.getClassLoader().getResourceAsStream("path/to/file.txt");
+```
+
+The getResourceAsStream() method returns an InputStream for files located in the classpath, typically in src/main/resources.
+
+### BufferedReader for Text Files
+
+Efficient line-by-line reading using BufferedReader with automatic resource management.
+
+```java
+try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+    StringBuilder content = new StringBuilder();
+    String line;
+    
+    while ((line = reader.readLine()) != null) {
+        content.append(line).append("\n");
+    }
+    
+    return content.toString();
+}
+```
+
+The try-with-resources statement ensures automatic closure of BufferedReader and InputStream resources.
+
+### Text Processing and Filtering
+
+Filter and process text content line by line, useful for SQL files and configuration processing.
+
+```java
+for (String line : lines) {
+    String trimmedLine = line.trim();
+    // Skip comments and empty lines
+    if (!trimmedLine.startsWith("--") && !trimmedLine.isEmpty()) {
+        content.append(trimmedLine).append("\n");
+    }
+}
+```
+
+Common pattern for removing comments and empty lines from configuration or SQL files.
+
+### Exception Handling for I/O
+
+Proper error handling for I/O operations using IOException and informative error messages.
+
+```java
+public static String readResourceSafely(String resourcePath) throws IOException {
+    InputStream inputStream = MyClass.class.getClassLoader().getResourceAsStream(resourcePath);
+    
+    if (inputStream == null) {
+        throw new IOException("Resource not found: " + resourcePath);
+    }
+    
+    // Process the stream...
+}
+```
+
+Always check for null InputStream and throw meaningful exceptions for missing resources.
+
+### Resource Management Best Practices
+
+Use try-with-resources for automatic cleanup of I/O resources.
+
+```java
+try (InputStream stream = getResourceAsStream(path);
+     BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+    // Process the file
+    return processContent(reader);
+}
+// Resources automatically closed here
+```
+
+The try-with-resources statement guarantees proper closure even if exceptions occur during processing.
+
+### Common Use Cases
+
+File I/O patterns are essential for:
+- Reading SQL migration files from resources
+- Loading configuration files packaged with applications
+- Processing template files and data files
+- Reading property files and initialization data
 
 [↑ Back to Contents](#table-of-contents)
 
