@@ -771,12 +771,12 @@ main() {
   print_info "Setting up HelloWorld example app..."
   if [ -d "examples/helloworld" ]; then
     
-    # Check if HelloWorld already exists and is accessible
-    if [ -d "helloworld" ]; then
-      if [ -w "helloworld" ]; then
+    # Check if HelloWorld already exists and is accessible in projects
+    if [ -d "projects/helloworld" ]; then
+      if [ -w "projects/helloworld" ]; then
         print_info "HelloWorld already exists and is writable, updating..."
-        rm -rf helloworld 2>/dev/null || {
-          print_warn "Could not remove existing helloworld directory (permission denied)"
+        rm -rf projects/helloworld 2>/dev/null || {
+          print_warn "Could not remove existing projects/helloworld directory (permission denied)"
           print_warn "Skipping HelloWorld setup to avoid conflicts"
           skip_helloworld_setup=true
         }
@@ -784,13 +784,13 @@ main() {
       else
         print_warn "HelloWorld directory exists but is not writable (owned by root?)"
         print_warn "Skipping HelloWorld refresh to avoid permission issues"
-        print_info "Use 'sudo rm -rf helloworld' to force refresh if needed"
+        print_info "Use 'sudo rm -rf projects/helloworld' to force refresh if needed"
         # Still try to test build/deploy if container has the tools
         CONTAINER_NAME=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
         if docker exec "${CONTAINER_NAME}" which mvn > /dev/null 2>&1 && \
            docker exec "${CONTAINER_NAME}" which make > /dev/null 2>&1; then
           print_info "Testing existing HelloWorld deployment..."
-          if [ -f "helloworld/pom.xml" ]; then
+          if [ -f "projects/helloworld/pom.xml" ]; then
             print_info "Existing HelloWorld found, skipping build test"
           fi
         fi
@@ -800,14 +800,14 @@ main() {
       print_info "HelloWorld not found, creating fresh installation..."
     fi
     
-    # Fresh copy from examples (only if not skipping)
+    # Fresh copy from examples to projects (only if not skipping)
     if [ "$skip_helloworld_setup" != "true" ]; then
-      cp -r examples/helloworld . 2>/dev/null || {
-        print_error "Failed to copy HelloWorld example (permission denied?)"
+      cp -r examples/helloworld projects/ 2>/dev/null || {
+        print_error "Failed to copy HelloWorld example to projects/ (permission denied?)"
         skip_helloworld_setup=true
       }
       if [ "$skip_helloworld_setup" != "true" ]; then
-        print_info "HelloWorld app copied to project root"
+        print_info "HelloWorld app copied to projects/helloworld"
       fi
     fi
     
@@ -819,11 +819,11 @@ main() {
         print_info "Testing Makefile build and deploy process..."
       
       # Build the HelloWorld app
-      if docker exec -w /workspace "${CONTAINER_NAME}" make build app=helloworld > /dev/null 2>&1; then
+      if docker exec -w /workspace/projects "${CONTAINER_NAME}" make build app=helloworld > /dev/null 2>&1; then
         print_info "HelloWorld app built successfully"
         
         # Deploy the HelloWorld app  
-        if docker exec -w /workspace "${CONTAINER_NAME}" make deploy app=helloworld > /dev/null 2>&1; then
+        if docker exec -w /workspace/projects "${CONTAINER_NAME}" make deploy app=helloworld > /dev/null 2>&1; then
           print_info "HelloWorld app deployed successfully"
           echo "Test URL: http://localhost:${HOST_PORT}/helloworld/api/hello"
           echo "Web UI: http://localhost:${HOST_PORT}/helloworld/"
