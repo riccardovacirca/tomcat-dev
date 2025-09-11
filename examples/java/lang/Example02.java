@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * Example02 - Primitive types and wrappers
- * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
- * License: GNU GPL Version 2. See LICENSE
+ * Example 02 - Primitive types and wrappers
+ * (c)2018-2025 Riccardo Vacirca. All right reserved.  
+ * GNU GPL Version 2. See LICENSE
  *
  * Compile: javac Example02.java
  * Run: java Example02

@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * Example04 - Wrapper class methods
- * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
- * License: GNU GPL Version 2. See LICENSE
+ * Example 04 - Wrapper class methods
+ * (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * GNU GPL Version 2. See LICENSE
  *
  * Compile: javac Example04.java
  * Run: java Example04
@@ -25,8 +25,10 @@ class CharacterCreation
     Character x = 'A';
     char y = x.charValue();
     String z = x.toString();
-    this.buff = String.format("valueOf: %c, charValue: %c, toString: %s",
-                              x, y, z);
+    this.buff = String.format(
+      "valueOf: %c, charValue: %c, toString: %s",
+      x, y, z
+    );
   }
 
   public String toString() {
@@ -44,8 +46,10 @@ class CharacterComparison
     boolean eq = x.equals(y);
     int cmp1 = Character.compare('A', 'A');
     int cmp2 = x.compareTo(y);
-    this.buff = String.format("equals: %b, compare: %d, compareTo: %d",
-                              eq, cmp1, cmp2);
+    this.buff = String.format(
+      "equals: %b, compare: %d, compareTo: %d",
+      eq, cmp1, cmp2
+    );
   }
 
   public String toString() {

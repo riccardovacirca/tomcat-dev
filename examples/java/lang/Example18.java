@@ -1,4 +1,23 @@
-// Simple Event Listener Example
+/* *****************************************************************************
+ * Example18 - Event Listeners
+ * (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * GNU GPL Version 2. See LICENSE
+ *
+ * Compile: javac Example18.java
+ * Run: java Example18
+ * ---
+ * === Simple Event Listener Example ===
+ * 
+ * [Logger1] Event: APPLICATION_STARTED at [timestamp]
+ * [Logger2] Event: APPLICATION_STARTED at [timestamp]
+ * [Logger1] Event: USER_LOGIN at [timestamp]
+ * [Logger2] Event: USER_LOGIN at [timestamp]
+ * [Logger1] Event: DATA_PROCESSED at [timestamp]
+ * [Logger2] Event: DATA_PROCESSED at [timestamp]
+ * [Logger1] Event: APPLICATION_STOPPED at [timestamp]
+ * [Logger2] Event: APPLICATION_STOPPED at [timestamp]
+ * *****************************************************************************
+*/
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +67,7 @@ class EventPublisher {
 }
 
 // Main example
-public class Example01 {
+public class Example18 {
   public static void main(String[] args) {
     System.out.println("=== Simple Event Listener Example ===\n");
     // Create event publisher

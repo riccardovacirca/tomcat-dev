@@ -1,10 +1,30 @@
-/**
- * Application Lifecycle Threading Example - Simplified Version
+/* *****************************************************************************
+ * Example20 - Application Lifecycle Threading
+ * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * License: GNU GPL Version 2. See LICENSE
+ *
+ * Compile: javac Example20.java
+ * Run: java Example20
+ * ---
+ * === Application Lifecycle Threading Example ===
  * 
- * Demonstrates the minimal implementation for integrating a background thread
- * with application lifecycle using lambda expressions. Shows thread creation,
- * lifecycle management, and graceful shutdown patterns.
- */
+ * === Application Starting ===
+ * Background worker started
+ * Background service started
+ * 
+ * Application running... (will stop after 10 seconds)
+ * 
+ * Worker attivo...
+ * Worker attivo...
+ * Worker attivo...
+ * 
+ * === Application Stopping ===
+ * Worker terminato
+ * Application stopped
+ * 
+ * Main application terminated
+ * *****************************************************************************
+*/
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

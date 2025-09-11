@@ -1,32 +1,39 @@
-/**
- * Example24: JSON Processing with org.json Library
+/* *****************************************************************************
+ * Example24 - JSON Processing with org.json Library
+ * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * License: GNU GPL Version 2. See LICENSE
+ *
+ * Compile: javac -cp "lib/*" Example24.java
+ * Run: java -cp ".:lib/*" Example24
+ * ---
+ * === JSON Processing Examples ===
  * 
- * Demonstrates JSON processing in Java using the org.json library, which provides
- * the simplest and most straightforward API for JSON operations. This library is
- * lightweight, has no external dependencies, and offers intuitive methods for
- * creating, parsing, and manipulating JSON data structures.
+ * 1. Basic JSON Object Operations:
+ *   Nome: Mario
+ *   Età: 42
+ *   Attivo: true
  * 
- * Key Features:
- * - Simple object creation with JSONObject and JSONArray
- * - Direct value access with get(), getString(), getInt(), etc.
- * - Automatic type conversion and null handling
- * - Clean syntax for nested objects and arrays
- * - Built-in pretty printing and formatting
+ * 2. JSON Arrays and Nested Objects:
+ *   Città: Milano
+ *   Primo telefono: 02-1234567
+ *   Numero telefoni: 2
  * 
- * Common Use Cases:
- * - API request/response processing
- * - Configuration file parsing
- * - Data serialization/deserialization
- * - Web service integration
- * - REST API development
+ * 3. JSON Parsing from String:
+ *   Result: 0 - Success
+ *   Patient ID: 12345
+ *   Patient Name: Anna Bianchi
  * 
- * Dependency required (Maven):
- * <dependency>
- *   <groupId>org.json</groupId>
- *   <artifactId>json</artifactId>
- *   <version>20240303</version>
- * </dependency>
- */
+ * 4. Converting Java Objects to JSON:
+ *   Users array length: 2
+ * 
+ * 5. Error Handling and Safe Operations:
+ *   JSONException caught: [error message]
+ *   Safe access - existing field: value
+ *   Safe check - missing field not accessed
+ * 
+ * === JSON Examples completed ===
+ * *****************************************************************************
+*/
 
 import org.json.JSONArray;
 import org.json.JSONException;

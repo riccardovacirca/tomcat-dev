@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * Example05 - Code blocks
- * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
- * License: GNU GPL Version 2. See LICENSE
+ * Example 05 - Code blocks
+ * (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * GNU GPL Version 2. See LICENSE
  *
  * Compile: javac Example05.java
  * Run: java Example05

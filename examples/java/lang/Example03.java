@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * Example03 - Arrays and Arrays utilities
- * Copyright: (C)2018-2025 Riccardo Vacirca. All right reserved.  
- * License: GNU GPL Version 2. See LICENSE
+ * Example 03 - Arrays and Arrays utilities
+ * (C)2018-2025 Riccardo Vacirca. All right reserved.  
+ * GNU GPL Version 2. See LICENSE
  *
  * Compile: javac Example03.java
  * Run: java Example03
@@ -22,8 +22,7 @@
  * *****************************************************************************
 */
 
-class CharArray
-{
+class CharArray {
   private String buff = null;
 
   public CharArray() {
@@ -132,12 +131,10 @@ class ArraysComparison
 public class Example03
 {
   public static void main(String[] args) {
-    System.out.printf("\n");
     System.out.printf("%s\n", new CharArray());
     System.out.printf("%s\n", new IntArray());
     System.out.printf("%s\n", new DoubleArray());
     System.out.printf("%s\n", new ArraysUtils());
     System.out.printf("%s\n", new ArraysComparison());
-    System.out.printf("\n");
   }
 }
