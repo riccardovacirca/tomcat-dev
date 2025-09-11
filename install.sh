@@ -120,8 +120,6 @@ create_gitignore() {
 !LICENSE
 !examples/
 !examples/**
-!projects/
-!projects/**
 EOF
     print_info ".gitignore file created"
   else
