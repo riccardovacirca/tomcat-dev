@@ -1,19 +1,31 @@
 # Main Project Makefile
 
+MAKEFLAGS += --no-print-directory
+
 PROJECTS_DIR = projects
 
-.PHONY: build deploy help
+.PHONY: build deploy help app lib default
+
+# Default target - shows help
+default:
+	@$(MAKE) help
 
 help:
 	@echo "Usage:"
-	@echo "  make build app=<app_name>   - Build specific app from $(PROJECTS_DIR)/"
-	@echo "  make deploy app=<app_name>  - Deploy specific app from $(PROJECTS_DIR)/"
+	@echo "  make app name=<app_name> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
+	@echo "  make lib name=<lib_name> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
+	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
+	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
+	@echo ""
+	@echo "Database types: postgres, mariadb, sqlite"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make app name=my-webapp"
+	@echo "  make app name=my-api db=postgres"
+	@echo "  make lib name=my-library"
+	@echo "  make lib name=auth-service db=postgres"
 	@echo "  make build app=mpi"
 	@echo "  make deploy app=mpi"
-	@echo ""
-	@echo "Note: Apps must be copied from examples/ to $(PROJECTS_DIR)/ before building"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -46,3 +58,25 @@ deploy:
 		exit 1; \
 	fi
 	@cd $(PROJECTS_DIR)/$(app) && $(MAKE) deploy
+
+app:
+	@if [ -z "$(name)" ]; then \
+		echo "Error: name parameter required. Usage: make app name=<app_name> [db=<db_type>]"; \
+		exit 1; \
+	fi
+	@if [ -n "$(db)" ]; then \
+		./install.sh --create-webapp $(name) --database $(db); \
+	else \
+		./install.sh --create-webapp $(name); \
+	fi
+
+lib:
+	@if [ -z "$(name)" ]; then \
+		echo "Error: name parameter required. Usage: make lib name=<lib_name> [db=<db_type>]"; \
+		exit 1; \
+	fi
+	@if [ -n "$(db)" ]; then \
+		./install.sh --create-library $(name) --database $(db); \
+	else \
+		./install.sh --create-library $(name); \
+	fi

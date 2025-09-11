@@ -6,6 +6,9 @@ set -e
 INSTALL_POSTGRES=false
 INSTALL_MARIADB=false
 INSTALL_SQLITE=false
+CREATE_WEBAPP=""
+CREATE_LIBRARY=""
+DATABASE_TYPE=""
 
 print_info() {
   printf "[INFO] %s\n" "$1"
@@ -679,6 +682,128 @@ setup_sqlite() {
   echo ""
 }
 
+# Create new Maven webapp
+create_webapp() {
+  local app_name="$1"
+  local db_type="$2"
+  
+  if [ -z "$app_name" ]; then
+    print_error "Application name is required"
+    exit 1
+  fi
+  
+  if [ -d "projects/$app_name" ]; then
+    print_error "Application '$app_name' already exists in projects/ directory"
+    exit 1
+  fi
+  
+  if [ -n "$db_type" ]; then
+    print_info "Creating webapp '$app_name' with $db_type database..."
+    
+    # Validate database type
+    case "$db_type" in
+      postgres|mariadb|sqlite)
+        ;;
+      *)
+        print_error "Unsupported database type: $db_type. Supported: postgres, mariadb, sqlite"
+        exit 1
+        ;;
+    esac
+    
+    cd projects || exit 1
+    
+    mvn archetype:generate \
+      -DgroupId=com.example \
+      -DartifactId="$app_name" \
+      -DarchetypeGroupId=com.example.archetypes \
+      -DarchetypeArtifactId=tomcat-webapp-database-archetype \
+      -DarchetypeVersion=1.0.0 \
+      -DdbType="$db_type" \
+      -DinteractiveMode=false \
+      -q
+  else
+    print_info "Creating webapp '$app_name'..."
+    cd projects || exit 1
+    
+    mvn archetype:generate \
+      -DgroupId=com.example \
+      -DartifactId="$app_name" \
+      -DarchetypeGroupId=com.example.archetypes \
+      -DarchetypeArtifactId=tomcat-webapp-archetype \
+      -DarchetypeVersion=1.0.0 \
+      -DinteractiveMode=false \
+      -q
+  fi
+    
+  if [ ! -d "$app_name" ]; then
+    print_error "Failed to create webapp '$app_name'"
+    exit 1
+  fi
+  
+  
+  print_info "Created: projects/$app_name/"
+}
+
+create_library() {
+  local lib_name="$1"
+  local db_type="$2"
+  
+  if [ -z "$lib_name" ]; then
+    print_error "Library name is required"
+    exit 1
+  fi
+  
+  if [ -d "projects/$lib_name" ]; then
+    print_error "Library '$lib_name' already exists in projects/ directory"
+    exit 1
+  fi
+  
+  if [ -n "$db_type" ]; then
+    print_info "Creating library '$lib_name' with $db_type database..."
+    
+    # Validate database type
+    case "$db_type" in
+      postgres|mariadb|sqlite)
+        ;;
+      *)
+        print_error "Unsupported database type: $db_type. Supported: postgres, mariadb, sqlite"
+        exit 1
+        ;;
+    esac
+    
+    cd projects || exit 1
+    
+    mvn archetype:generate \
+      -DgroupId=com.example \
+      -DartifactId="$lib_name" \
+      -DarchetypeGroupId=com.example.archetypes \
+      -DarchetypeArtifactId=tomcat-jar-database-archetype \
+      -DarchetypeVersion=1.0.0 \
+      -DdbType="$db_type" \
+      -DinteractiveMode=false \
+      -q
+  else
+    print_info "Creating library '$lib_name'..."
+    cd projects || exit 1
+    
+    mvn archetype:generate \
+      -DgroupId=com.example \
+      -DartifactId="$lib_name" \
+      -DarchetypeGroupId=com.example.archetypes \
+      -DarchetypeArtifactId=tomcat-jar-library \
+      -DarchetypeVersion=1.0.0 \
+      -DinteractiveMode=false \
+      -q
+  fi
+    
+  if [ ! -d "$lib_name" ]; then
+    print_error "Failed to create library '$lib_name'"
+    exit 1
+  fi
+  
+  print_info "Created: projects/$lib_name/"
+}
+
 # Parse command line arguments
 parse_args() {
   while [ $# -gt 0 ]; do
@@ -694,6 +819,30 @@ parse_args() {
       --sqlite)
         INSTALL_SQLITE=true
         shift
+        ;;
+      --create-webapp)
+        if [ -z "$2" ]; then
+          print_error "--create-webapp requires an application name"
+          exit 1
+        fi
+        CREATE_WEBAPP="$2"
+        shift 2
+        ;;
+      --create-library)
+        if [ -z "$2" ]; then
+          print_error "--create-library requires a library name"
+          exit 1
+        fi
+        CREATE_LIBRARY="$2"
+        shift 2
+        ;;
+      --database)
+        if [ -z "$2" ]; then
+          print_error "--database requires a database type (postgres, mariadb, sqlite)"
+          exit 1
+        fi
+        DATABASE_TYPE="$2"
+        shift 2
         ;;
       --help|-h)
         show_usage
@@ -715,23 +864,40 @@ show_usage() {
   echo "Sets up Tomcat development environment with Docker container."
   echo ""
   echo "Options:"
-  echo "  --postgres  Also install and start PostgreSQL container"
-  echo "  --mariadb   Also install and start MariaDB container"
-  echo "  --sqlite    Also install SQLite3 in Tomcat container"
-  echo "  --help, -h  Show this help"
+  echo "  --postgres             Also install and start PostgreSQL container"
+  echo "  --mariadb              Also install and start MariaDB container"
+  echo "  --sqlite               Also install SQLite3 in Tomcat container"
+  echo "  --create-webapp <name> Create new Maven webapp with Makefile and README"
+  echo "  --create-library <name> Create new JAR library with Makefile and README"
+  echo "  --database <type>       Add database support (postgres, mariadb, sqlite)"
+  echo "  --help, -h             Show this help"
   echo ""
   echo "Examples:"
-  echo "  $0                    # Setup Tomcat only"
-  echo "  $0 --postgres         # Setup Tomcat + PostgreSQL"
-  echo "  $0 --mariadb          # Setup Tomcat + MariaDB"
-  echo "  $0 --sqlite           # Setup Tomcat + SQLite3"
-  echo "  $0 --postgres --sqlite # Setup Tomcat + PostgreSQL + SQLite3"
+  echo "  $0                           # Setup Tomcat only"
+  echo "  $0 --postgres                # Setup Tomcat + PostgreSQL"
+  echo "  $0 --mariadb                 # Setup Tomcat + MariaDB"
+  echo "  $0 --sqlite                  # Setup Tomcat + SQLite3"
+  echo "  $0 --create-webapp myapp     # Create new webapp 'myapp'"
+  echo "  $0 --create-library mylib    # Create new JAR library 'mylib'"
+  echo "  $0 --postgres --sqlite       # Setup Tomcat + PostgreSQL + SQLite3"
 }
 
 # Main execution - Setup environment with two-phase .env check
 main() {
   # Parse command line arguments
   parse_args "$@"
+  
+  # Handle create-webapp command
+  if [ -n "$CREATE_WEBAPP" ]; then
+    create_webapp "$CREATE_WEBAPP" "$DATABASE_TYPE"
+    exit 0
+  fi
+  
+  if [ -n "$CREATE_LIBRARY" ]; then
+    create_library "$CREATE_LIBRARY" "$DATABASE_TYPE"
+    exit 0
+  fi
+  
   print_header "Java Web Application Environment Setup"
   echo ""
   # Phase 1: Check if .env exists - if not, create it and exit
@@ -768,82 +934,7 @@ main() {
   print_info "=== Setup Complete ==="
   HOST_PORT=$(grep HOST_PORT .env | cut -d= -f2)
   print_info "Container: $(grep "^CONTAINER_NAME=" .env | cut -d= -f2) running"
-  # Setup HelloWorld example app (idempotent)
-  print_info "Setting up HelloWorld example app..."
-  if [ -d "examples/helloworld" ]; then
-    
-    # Check if HelloWorld already exists and is accessible in projects
-    if [ -d "projects/helloworld" ]; then
-      if [ -w "projects/helloworld" ]; then
-        print_info "HelloWorld already exists and is writable, updating..."
-        rm -rf projects/helloworld 2>/dev/null || {
-          print_warn "Could not remove existing projects/helloworld directory (permission denied)"
-          print_warn "Skipping HelloWorld setup to avoid conflicts"
-          skip_helloworld_setup=true
-        }
-        rm -f webapps/helloworld.war 2>/dev/null || true
-      else
-        print_warn "HelloWorld directory exists but is not writable (owned by root?)"
-        print_warn "Skipping HelloWorld refresh to avoid permission issues"
-        print_info "Use 'sudo rm -rf projects/helloworld' to force refresh if needed"
-        # Still try to test build/deploy if container has the tools
-        CONTAINER_NAME=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
-        if docker exec "${CONTAINER_NAME}" which mvn > /dev/null 2>&1 && \
-           docker exec "${CONTAINER_NAME}" which make > /dev/null 2>&1; then
-          print_info "Testing existing HelloWorld deployment..."
-          if [ -f "projects/helloworld/pom.xml" ]; then
-            print_info "Existing HelloWorld found, skipping build test"
-          fi
-        fi
-        skip_helloworld_setup=true
-      fi
-    else
-      print_info "HelloWorld not found, creating fresh installation..."
-    fi
-    
-    # Fresh copy from examples to projects (only if not skipping)
-    if [ "$skip_helloworld_setup" != "true" ]; then
-      cp -r examples/helloworld projects/ 2>/dev/null || {
-        print_error "Failed to copy HelloWorld example to projects/ (permission denied?)"
-        skip_helloworld_setup=true
-      }
-      if [ "$skip_helloworld_setup" != "true" ]; then
-        print_info "HelloWorld app copied to projects/helloworld"
-      fi
-    fi
-    
-    # Test build and deploy using Makefile (only if setup was successful)
-    if [ "$skip_helloworld_setup" != "true" ]; then
-      CONTAINER_NAME=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
-      if docker exec "${CONTAINER_NAME}" which mvn > /dev/null 2>&1 && \
-         docker exec "${CONTAINER_NAME}" which make > /dev/null 2>&1; then
-        print_info "Testing Makefile build and deploy process..."
-      
-      # Build the HelloWorld app
-      if docker exec -w /workspace/projects "${CONTAINER_NAME}" make build app=helloworld > /dev/null 2>&1; then
-        print_info "HelloWorld app built successfully"
-        
-        # Deploy the HelloWorld app  
-        if docker exec -w /workspace/projects "${CONTAINER_NAME}" make deploy app=helloworld > /dev/null 2>&1; then
-          print_info "HelloWorld app deployed successfully"
-          echo "Test URL: http://localhost:${HOST_PORT}/helloworld/api/hello"
-          echo "Web UI: http://localhost:${HOST_PORT}/helloworld/"
-        else
-          print_warn "HelloWorld app deployment failed"
-          print_info "You can manually deploy with: make deploy app=helloworld"
-        fi
-        else
-          print_warn "HelloWorld app build failed"
-          print_info "You can manually build with: make build app=helloworld"
-        fi
-      else
-        print_warn "Maven or Make not available in container"
-        print_info "Development tools may not be installed correctly"
-      fi
-    fi
-  else
-    print_warn "HelloWorld example not found in examples/ directory"
-  fi
+  # Installation completed - no more automatic webapp setup
   echo ""
   print_info "Installation completed successfully"
   echo ""
@@ -851,9 +942,9 @@ main() {
   echo "  http://localhost:${HOST_PORT}/manager/html"
   echo "  http://localhost:${HOST_PORT}/host-manager/html"
   echo ""
-  echo "HelloWorld Application URLs:"
-  echo "  API: http://localhost:${HOST_PORT}/helloworld/api/hello"
-  echo "  Web UI: http://localhost:${HOST_PORT}/helloworld/"
+  echo "Generate webapps with:"
+  echo "  make app name=<app_name>           # Simple webapp"
+  echo "  make app name=<app_name> db=<type> # Database webapp"
   echo ""
   ADMIN_USER=$(grep ADMIN_USER .env | cut -d= -f2)
   ADMIN_PASSWORD=$(grep ADMIN_PASSWORD .env | cut -d= -f2)
