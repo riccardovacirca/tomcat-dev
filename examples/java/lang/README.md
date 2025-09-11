@@ -27,6 +27,9 @@
 - [Lambda Expressions](#lambda-expressions)
 - [Application Lifecycle Threading](#application-lifecycle-threading)
 - [File I/O and Resource Reading](#file-io-and-resource-reading)
+- [Try-with-resources Pattern](#try-with-resources-pattern)
+- [JUnit 5 Testing Framework](#junit-5-testing-framework)
+- [JSON Processing](#json-processing)
 
 <!-- ======================================================================= -->
 
@@ -2378,6 +2381,602 @@ File I/O patterns are essential for:
 - Loading configuration files packaged with applications
 - Processing template files and data files
 - Reading property files and initialization data
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## Try-with-resources Pattern
+
+Source file: `examples/java/lang/Example22.java`
+
+This example demonstrates the try-with-resources statement for automatic resource management in Java. The try-with-resources pattern ensures that resources implementing AutoCloseable are automatically closed when the try block exits, preventing resource leaks and simplifying exception handling. This pattern is essential for working with files, database connections, network resources, and any custom resources that need cleanup.
+
+### Basic Try-with-resources Syntax
+
+Shows the fundamental syntax with automatic resource closure.
+
+```java
+try (BufferedReader reader = Files.newBufferedReader(path)) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+        System.out.println(line);
+    }
+} // reader.close() called automatically here
+```
+
+The resource is declared in the try statement parentheses and automatically closed when the block exits.
+
+### Multiple Resources Management
+
+Demonstrates managing multiple resources in a single try-with-resources statement.
+
+```java
+try (BufferedReader reader = Files.newBufferedReader(sourceFile);
+     BufferedWriter writer = Files.newBufferedWriter(targetFile)) {
+    
+    String line;
+    while ((line = reader.readLine()) != null) {
+        writer.write(line);
+        writer.newLine();
+    }
+} // Both reader and writer closed automatically (in reverse order)
+```
+
+Multiple resources are separated by semicolons and closed in reverse declaration order.
+
+### Custom AutoCloseable Implementation
+
+Shows how to create custom resources that work with try-with-resources.
+
+```java
+class DatabaseConnection implements AutoCloseable {
+    private String connectionString;
+    private boolean isOpen;
+    
+    public DatabaseConnection(String connectionString) {
+        this.connectionString = connectionString;
+        this.isOpen = true;
+    }
+    
+    @Override
+    public void close() {
+        if (isOpen) {
+            System.out.println("Database connection closed");
+            isOpen = false;
+        }
+    }
+}
+
+// Usage with try-with-resources
+try (DatabaseConnection conn = new DatabaseConnection("localhost:5432")) {
+    // Use connection
+} // conn.close() called automatically
+```
+
+Custom resources must implement AutoCloseable or Closeable interface with a close() method.
+
+### Exception Handling with Try-with-resources
+
+Demonstrates suppressed exceptions when both try block and close() method throw exceptions.
+
+```java
+try (ProblematicResource resource = new ProblematicResource()) {
+    resource.doSomething(); // Throws exception
+} catch (Exception e) {
+    System.out.println("Main exception: " + e.getMessage());
+    
+    // Check for suppressed exceptions from close() method
+    Throwable[] suppressed = e.getSuppressed();
+    for (Throwable t : suppressed) {
+        System.out.println("Suppressed: " + t.getMessage());
+    }
+}
+```
+
+If both the try block and close() method throw exceptions, the close() exception is suppressed.
+
+### Database Operations Example
+
+Real-world usage pattern for database operations with proper resource management.
+
+```java
+try (Connection conn = dataSource.getConnection();
+     CallableStatement stmt = conn.prepareCall("SELECT * FROM sp_get_patient(?)")) {
+    
+    stmt.setLong(1, patientId);
+    
+    try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+            // Process results
+        }
+    }
+} // All resources closed automatically in reverse order
+```
+
+Common pattern for database access ensuring proper cleanup of connections, statements, and result sets.
+
+### Benefits and Best Practices
+
+**Automatic Resource Management**: Resources are guaranteed to be closed, preventing leaks.
+
+**Exception Safety**: Resources are closed even if exceptions occur in the try block.
+
+**Cleaner Code**: Eliminates the need for explicit finally blocks for resource cleanup.
+
+**Multiple Resource Support**: Handle multiple resources with proper cleanup ordering.
+
+**Best Practices**:
+- Always use try-with-resources for AutoCloseable resources
+- Declare resources in the try statement, not before
+- Handle exceptions appropriately, including suppressed exceptions
+- Implement AutoCloseable properly in custom resource classes
+
+### Expected Try-with-resources Output
+
+```
+Database connection opened to: localhost:5432
+Executing query: SELECT * FROM users
+Query executed successfully
+Database connection closed
+
+File copied successfully
+Copied content: Content to copy
+
+Main exception: Something went wrong in doSomething()
+Suppressed exception: Error during close()
+```
+
+Shows automatic resource management with both successful operations and exception handling scenarios.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## JUnit 5 Testing Framework
+
+Source file: `examples/java/lang/Example23.java`
+
+This example demonstrates JUnit 5 (Jupiter) testing framework for Java applications. JUnit is the most widely used testing framework in Java, providing annotations, assertions, and lifecycle management for unit tests. The framework enables test-driven development, automated testing, and ensures code quality through comprehensive test coverage. JUnit 5 introduces modern features like parameterized tests, nested test classes, and improved assertions.
+
+### Basic Test Structure
+
+Shows the fundamental structure of JUnit 5 tests with annotations and assertions.
+
+```java
+class CalculatorTest {
+    private Calculator calculator;
+    
+    @BeforeEach
+    void setUp() {
+        calculator = new Calculator();
+    }
+    
+    @Test
+    @DisplayName("Addition should work correctly")
+    void testAddition() {
+        assertEquals(8, calculator.add(5, 3), "5 + 3 should equal 8");
+        assertEquals(0, calculator.add(-1, 1), "-1 + 1 should equal 0");
+    }
+}
+```
+
+Basic test class with setup method and assertion-based test verification.
+
+### Lifecycle Annotations
+
+Demonstrates JUnit 5 lifecycle management annotations for test setup and cleanup.
+
+```java
+@BeforeAll
+static void setUpAll() {
+    // Run once before all tests in the class
+}
+
+@BeforeEach
+void setUp() {
+    // Run before each test method
+}
+
+@AfterEach
+void tearDown() {
+    // Run after each test method
+}
+
+@AfterAll
+static void tearDownAll() {
+    // Run once after all tests in the class
+}
+```
+
+Lifecycle annotations provide hooks for test preparation and cleanup at different stages.
+
+### Exception Testing
+
+Shows how to test expected exceptions using assertThrows().
+
+```java
+@Test
+@DisplayName("Division by zero should throw exception")
+void testDivisionByZero() {
+    IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> calculator.divide(10, 0),
+        "Division by zero should throw IllegalArgumentException"
+    );
+    assertTrue(exception.getMessage().contains("Division by zero"));
+}
+```
+
+Exception testing verifies that methods throw expected exceptions under specific conditions.
+
+### Parameterized Tests
+
+Demonstrates testing multiple inputs using parameterized tests with @ValueSource and @CsvSource.
+
+```java
+@ParameterizedTest
+@DisplayName("Prime number detection should work correctly")
+@ValueSource(ints = {2, 3, 5, 7, 11, 13, 17, 19, 23})
+void testPrimeNumbers(int number) {
+    assertTrue(calculator.isPrime(number), number + " should be prime");
+}
+
+@ParameterizedTest
+@CsvSource({
+    "1, 2, 3",
+    "5, 7, 12", 
+    "-1, 1, 0"
+})
+void testAdditionWithCsv(int a, int b, int expected) {
+    assertEquals(expected, calculator.add(a, b));
+}
+```
+
+Parameterized tests reduce code duplication by running the same test logic with different inputs.
+
+### Nested Test Classes
+
+Shows test organization using nested classes for logical grouping.
+
+```java
+@DisplayName("UserService Tests")
+class UserServiceTest {
+    
+    @Nested
+    @DisplayName("User Addition Tests")
+    class UserAdditionTest {
+        
+        @Test
+        @DisplayName("Should add valid user successfully")
+        void testAddValidUser() {
+            userService.addUser("john_doe");
+            assertEquals(1, userService.getUserCount());
+            assertTrue(userService.userExists("john_doe"));
+        }
+    }
+}
+```
+
+Nested classes help organize related tests and provide better test structure and readability.
+
+### Assertions and Timeouts
+
+Comprehensive assertion methods for different verification needs.
+
+```java
+@Test
+void testAssertions() {
+    // Basic assertions
+    assertEquals(expected, actual, "Values should be equal");
+    assertTrue(condition, "Condition should be true");
+    assertFalse(condition, "Condition should be false");
+    assertNull(value, "Value should be null");
+    assertNotNull(value, "Value should not be null");
+    
+    // Collection assertions
+    assertIterableEquals(expectedList, actualList);
+    
+    // Timeout assertions
+    assertTimeout(Duration.ofMillis(100), () -> {
+        // Code that should complete within 100ms
+    });
+}
+```
+
+JUnit 5 provides rich assertion methods for comprehensive test verification.
+
+### Test Dependencies and Maven Integration
+
+Maven configuration for JUnit 5 testing with Surefire plugin.
+
+```xml
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>5.10.2</version>
+    <scope>test</scope>
+</dependency>
+
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>3.2.5</version>
+</plugin>
+```
+
+Proper Maven configuration enables test execution with `mvn test` command.
+
+### Running Tests
+
+Tests can be executed through:
+- **IDE**: Right-click test class and select "Run Tests"
+- **Maven**: `mvn test` command executes all tests
+- **Gradle**: `gradle test` for Gradle-based projects
+- **Command Line**: Direct JUnit console launcher
+
+### Expected JUnit Output
+
+```
+Calculator Tests:
+✓ Addition should work correctly
+✓ Division should work correctly  
+✓ Division by zero should throw exception
+✓ Square root should work for positive numbers
+✓ Prime number detection should work correctly [2]
+✓ Prime number detection should work correctly [3]
+✓ Prime number detection should work correctly [5]
+✓ Performance test - calculation should complete quickly
+
+UserService Tests:
+  User Addition Tests:
+    ✓ Should add valid user successfully
+    ✓ Should throw exception for null username
+  User Removal Tests:
+    ✓ Should remove existing user successfully
+
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+```
+
+Shows successful test execution with detailed test results and timing information.
+
+[↑ Back to Contents](#table-of-contents)
+
+<!-- ======================================================================= -->
+
+## JSON Processing
+
+Source file: `examples/java/lang/Example24.java`
+
+This example demonstrates JSON processing in Java using the org.json library, which provides the simplest and most straightforward API for JSON operations. The library is lightweight, has no external dependencies, and offers intuitive methods for creating, parsing, and manipulating JSON data structures. It's perfect for REST API development, configuration processing, and data serialization tasks.
+
+### Basic JSON Object Creation
+
+Shows the fundamental operations for creating and accessing JSON objects.
+
+```java
+JSONObject patient = new JSONObject();
+patient.put("nome", "Mario");
+patient.put("cognome", "Rossi");
+patient.put("eta", 42);
+patient.put("attivo", true);
+patient.put("note", JSONObject.NULL); // Explicit null value
+
+// Access values with automatic type conversion
+String nome = patient.getString("nome");
+int eta = patient.getInt("eta");
+boolean attivo = patient.getBoolean("attivo");
+```
+
+The JSONObject class provides intuitive put() and get() methods with automatic type conversion.
+
+### JSON Arrays and Nested Objects
+
+Demonstrates complex data structures with arrays and nested JSON objects.
+
+```java
+JSONObject address = new JSONObject();
+address.put("via", "Via Roma 123");
+address.put("citta", "Milano");
+address.put("cap", "20100");
+
+JSONArray telefoni = new JSONArray();
+telefoni.put("02-1234567");
+telefoni.put("347-9876543");
+
+JSONObject contact = new JSONObject();
+contact.put("id", 1001L);
+contact.put("nome", "Giulia");
+contact.put("indirizzo", address);
+contact.put("telefoni", telefoni);
+
+// Access nested values
+String citta = contact.getJSONObject("indirizzo").getString("citta");
+String primoTelefono = contact.getJSONArray("telefoni").getString(0);
+```
+
+Nested structures are built naturally using JSONObject and JSONArray composition.
+
+### JSON String Parsing
+
+Shows how to parse JSON received from external sources like APIs or files.
+
+```java
+String jsonString = """
+  {
+    "result_code": 0,
+    "message": "Success", 
+    "patient": {
+      "id": 12345,
+      "nome": "Anna",
+      "cognome": "Bianchi"
+    }
+  }
+  """;
+
+// Parse JSON string
+JSONObject response = new JSONObject(jsonString);
+
+// Extract values
+int resultCode = response.getInt("result_code");
+String message = response.getString("message");
+
+if (response.has("patient")) {
+  JSONObject patient = response.getJSONObject("patient");
+  String patientName = patient.getString("nome") + " " + patient.getString("cognome");
+}
+```
+
+The JSONObject constructor directly parses JSON strings with automatic validation.
+
+### Safe Value Access and Error Handling
+
+Demonstrates defensive programming with JSON operations using optional methods.
+
+```java
+// Safe access with default values
+String optValue = json.optString("missing_field", "default_value");
+int optInt = json.optInt("missing_number", 42);
+boolean optBool = json.optBoolean("missing_flag", false);
+
+// Check existence before access
+if (json.has("existing_field")) {
+  String value = json.getString("existing_field");
+}
+
+// Exception handling for invalid JSON
+try {
+  JSONObject obj = new JSONObject(invalidJsonString);
+} catch (JSONException e) {
+  System.out.println("Invalid JSON: " + e.getMessage());
+}
+```
+
+The opt methods provide safe access with default values, while has() checks field existence.
+
+### Converting Java Objects to JSON
+
+Shows practical patterns for serializing Java data to JSON format.
+
+```java
+// Create from Java collections
+List<String> skills = List.of("Java", "PostgreSQL", "REST API");
+Map<String, Object> preferences = Map.of(
+  "theme", "dark",
+  "language", "it",
+  "notifications", true
+);
+
+JSONObject userJson = new JSONObject();
+userJson.put("id", user.getId());
+userJson.put("nome", user.getNome());
+userJson.put("skills", new JSONArray(skills));
+userJson.put("preferences", new JSONObject(preferences));
+userJson.put("created_at", System.currentTimeMillis());
+
+// Pretty print with indentation
+String formatted = userJson.toString(2);
+```
+
+JSONObject and JSONArray constructors accept Java collections for easy conversion.
+
+### REST API Integration Pattern
+
+Real-world usage pattern for processing API requests and responses.
+
+```java
+// Parse incoming request
+private PatientData parsePatientJSON(HttpServletRequest request) throws IOException {
+  StringBuilder jsonInput = new StringBuilder();
+  try (BufferedReader reader = request.getReader()) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+      jsonInput.append(line);
+    }
+  }
+  
+  JSONObject json = new JSONObject(jsonInput.toString());
+  PatientData data = new PatientData();
+  
+  // Extract with validation
+  data.nome = json.optString("nome", null);
+  data.cognome = json.optString("cognome", null);
+  
+  if (json.has("data_nascita")) {
+    data.dataNascita = Date.valueOf(json.getString("data_nascita"));
+  }
+  
+  return data;
+}
+
+// Build response
+private String buildResponse(PatientResult result) {
+  JSONObject response = new JSONObject();
+  response.put("result_code", result.resultCode);
+  response.put("message", result.resultMessage);
+  
+  if (result.resultCode == 0) {
+    JSONObject patient = new JSONObject();
+    patient.put("id", result.idPaziente);
+    patient.put("uuid", result.uuidPaziente);
+    response.put("patient", patient);
+  }
+  
+  return response.toString();
+}
+```
+
+Common pattern for servlet-based REST APIs with proper error handling.
+
+### Library Benefits
+
+**Simple API**: Intuitive method names like put(), get(), has(), opt()
+**Type Safety**: Automatic conversion with type-specific getters
+**No Dependencies**: Self-contained library with no external requirements
+**Error Handling**: Clear JSONException for malformed JSON
+**Pretty Printing**: Built-in formatting with toString(indent)
+
+### Maven Dependency
+
+```xml
+<dependency>
+  <groupId>org.json</groupId>
+  <artifactId>json</artifactId>
+  <version>20240303</version>
+</dependency>
+```
+
+### Expected JSON Processing Output
+
+```
+=== JSON Processing Examples ===
+
+1. Basic JSON Object Operations:
+  Nome: Mario
+  Età: 42
+  Attivo: true
+  JSON: {"nome":"Mario","cognome":"Rossi","eta":42,"attivo":true,"note":null}
+
+2. JSON Arrays and Nested Objects:
+  Città: Milano
+  Primo telefono: 02-1234567
+  Numero telefoni: 2
+
+3. JSON Parsing from String:
+  Result: 0 - Success
+  Patient ID: 12345
+  Patient Name: Anna Bianchi
+
+4. Converting Java Objects to JSON:
+  User JSON with skills and preferences formatted
+
+5. Error Handling and Safe Operations:
+  JSONException caught: Invalid JSON format
+  Safe access - existing field: value
+  Optional string (with default): default_value
+```
+
+Shows comprehensive JSON operations from basic object creation to complex API integration patterns.
 
 [↑ Back to Contents](#table-of-contents)
 
