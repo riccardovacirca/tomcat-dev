@@ -9,7 +9,7 @@
               username="devuser" 
               password="devpass123"
               driverClassName="org.postgresql.Driver"
-              url="jdbc:postgresql://localhost:15432/devdb"/>
+              url="jdbc:postgresql://tomcat-dev-postgres:5432/devdb"/>
 #elseif( $dbType == "mariadb" )
     <Resource name="jdbc/${artifactId}DB" 
               auth="Container"
@@ -20,7 +20,7 @@
               username="devuser" 
               password="devpass123"
               driverClassName="org.mariadb.jdbc.Driver"
-              url="jdbc:mariadb://localhost:13306/devdb"/>
+              url="jdbc:mariadb://tomcat-dev-mariadb:3306/devdb"/>
 #elseif( $dbType == "sqlite" )
     <Resource name="jdbc/${artifactId}DB" 
               auth="Container"
