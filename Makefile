@@ -4,7 +4,7 @@ MAKEFLAGS += --no-print-directory
 
 PROJECTS_DIR = projects
 
-.PHONY: build deploy help app lib default
+.PHONY: build deploy help app lib postgres default
 
 # Default target - shows help
 default:
@@ -16,6 +16,7 @@ help:
 	@echo "  make lib name=<lib_name> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
 	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
 	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
+	@echo "  make postgres                           - Connect to PostgreSQL database"
 	@echo ""
 	@echo "Database types: postgres, mariadb, sqlite"
 	@echo ""
@@ -24,8 +25,6 @@ help:
 	@echo "  make app name=my-api db=postgres"
 	@echo "  make lib name=my-library"
 	@echo "  make lib name=auth-service db=postgres"
-	@echo "  make build app=mpi"
-	@echo "  make deploy app=mpi"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -80,3 +79,13 @@ lib:
 	else \
 		./install.sh --create-library $(name); \
 	fi
+
+postgres:
+	@if [ ! -f .env ]; then \
+		echo "Error: .env file not found"; \
+		exit 1; \
+	fi
+	@echo "Connecting to PostgreSQL database..."
+	@. ./.env && echo "Database: $$POSTGRES_DB | User: $$POSTGRES_USER | Host: host.docker.internal:$$POSTGRES_PORT"
+	@echo "Use \\q to quit"
+	@. ./.env && PGPASSWORD=$$POSTGRES_PASSWORD psql -h host.docker.internal -p $$POSTGRES_PORT -U $$POSTGRES_USER -d $$POSTGRES_DB
