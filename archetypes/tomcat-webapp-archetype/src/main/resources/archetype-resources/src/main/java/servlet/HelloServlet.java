@@ -11,7 +11,6 @@ import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@WebServlet("/api/hello")
 public class HelloServlet extends HttpServlet {
     
     private static final long serialVersionUID = 1L;

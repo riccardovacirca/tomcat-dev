@@ -7,6 +7,17 @@
          
     <display-name>${artifactId} API</display-name>
     <description>${artifactId} web application using Jakarta Servlets</description>
+
+    <!-- Servlet Configuration -->
+    <servlet>
+        <servlet-name>HelloServlet</servlet-name>
+        <servlet-class>${package}.servlet.HelloServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HelloServlet</servlet-name>
+        <url-pattern>/api/hello</url-pattern>
+    </servlet-mapping>
     
     <!-- Default error pages -->
     <error-page>

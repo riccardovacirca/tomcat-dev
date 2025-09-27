@@ -55,8 +55,9 @@ public class ItemServlet extends HttpServlet {
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"error\": \"Internal server error\"}");
+            response.getWriter().write("{\"error\": \"Internal server error: " + e.getMessage() + "\"}");
         }
     }
     
@@ -75,8 +76,9 @@ public class ItemServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_CREATED);
             objectMapper.writeValue(response.getWriter(), item);
         } catch (Exception e) {
+            e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"Invalid data\"}");
+            response.getWriter().write("{\"error\": \"Invalid data: " + e.getMessage() + "\"}");
         }
     }
     
