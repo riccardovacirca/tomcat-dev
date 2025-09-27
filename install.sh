@@ -6,6 +6,7 @@ set -e
 INSTALL_POSTGRES=false
 INSTALL_MARIADB=false
 INSTALL_SQLITE=false
+INSTALL_CLAUDE=false
 CREATE_WEBAPP=""
 CREATE_LIBRARY=""
 DATABASE_TYPE=""
@@ -24,6 +25,69 @@ print_error() {
 
 print_header() {
   printf "[TOMCAT-DEV] %s\n" "$1"
+}
+
+# Check if an archetype is installed in the local Maven repository
+check_archetype_installed() {
+  local groupId="$1"
+  local artifactId="$2"
+  local version="$3"
+
+  # Convert groupId to path format (com.example.archetypes -> com/example/archetypes)
+  local groupPath=$(echo "$groupId" | sed 's/\./\//g')
+  local archetypePath="$HOME/.m2/repository/$groupPath/$artifactId/$version"
+
+  [ -d "$archetypePath" ]
+}
+
+# Install all required archetypes if not already present
+ensure_archetypes_installed() {
+  local archetypes_needed=false
+  local archetypes_dir="archetypes"
+
+  # List of required archetypes
+  local archetype_list="tomcat-webapp-archetype tomcat-webapp-database-archetype tomcat-jar-library tomcat-jar-database-archetype"
+
+  # Check which archetypes need to be installed
+  for archetype in $archetype_list; do
+    if ! check_archetype_installed "com.example.archetypes" "$archetype" "1.0.0"; then
+      archetypes_needed=true
+      break
+    fi
+  done
+
+  if [ "$archetypes_needed" = true ]; then
+    print_info "Installing Maven archetypes to local repository..."
+
+    # Ensure we're in the correct directory
+    if [ ! -d "$archetypes_dir" ]; then
+      print_error "Archetypes directory not found: $archetypes_dir"
+      exit 1
+    fi
+
+    # Install each archetype
+    for archetype in $archetype_list; do
+      if [ -d "$archetypes_dir/$archetype" ]; then
+        if ! check_archetype_installed "com.example.archetypes" "$archetype" "1.0.0"; then
+          print_info "Installing archetype: $archetype"
+          cd "$archetypes_dir/$archetype" || exit 1
+          mvn clean install -q || {
+            print_error "Failed to install archetype: $archetype"
+            exit 1
+          }
+          cd - > /dev/null || exit 1
+        else
+          print_info "Archetype already installed: $archetype"
+        fi
+      else
+        print_warn "Archetype directory not found: $archetypes_dir/$archetype"
+      fi
+    done
+
+    print_info "All required archetypes are now installed"
+  else
+    print_info "All Maven archetypes are already installed"
+  fi
 }
 
 create_env_file() {
@@ -121,11 +185,24 @@ create_gitignore() {
 !Makefile
 !README.md
 !LICENSE
+!conf/
+!conf/**
 !examples/
 !examples/**
+!archetypes/
+!archetypes/**
 !projects/
 !projects/**
-projects/helloworld
+
+# But ignore Maven build artifacts everywhere
+**/target/
+target/
+*.jar
+*.war
+*.class
+
+# Ignore specific generated projects (add as needed)
+# projects/example-project/
 EOF
     print_info ".gitignore file created"
   else
@@ -682,20 +759,125 @@ setup_sqlite() {
   echo ""
 }
 
+# Install Claude Code in Tomcat container
+install_claude_code() {
+  print_info "Starting Claude Code installation..."
+  CONTAINER_NAME=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
+
+  # Check if development container is running
+  if ! docker ps --format 'table {{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    print_error "Development container '$CONTAINER_NAME' is not running"
+    print_error "Cannot install Claude Code without development container"
+    exit 1
+  fi
+
+  # Check if Claude Code is already installed
+  if docker exec "$CONTAINER_NAME" bash -c "command -v claude >/dev/null 2>&1"; then
+    print_info "Claude Code already installed"
+    return 0
+  fi
+
+  # Execute installation inside container
+  if ! docker exec -i "$CONTAINER_NAME" bash -c "
+    export DEBIAN_FRONTEND=noninteractive && \
+
+    # Install curl if needed
+    if ! command -v curl >/dev/null 2>&1; then
+      if command -v apt-get >/dev/null 2>&1; then apt-get update && apt-get install -y curl
+      elif command -v yum >/dev/null 2>&1; then yum install -y curl
+      elif command -v apk >/dev/null 2>&1; then apk add --no-cache curl
+      else echo 'ERROR: Install curl manually' && exit 1; fi
+    fi && \
+
+    # Install NVM if not present
+    export NVM_DIR=\"\$HOME/.nvm\" && \
+    if [ ! -s \"\$NVM_DIR/nvm.sh\" ]; then
+      echo 'INFO: Installing NVM...' && \
+      curl -o- 'https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh' | bash || { echo 'ERROR: NVM install failed'; exit 1; }
+    fi && \
+
+    # Source NVM for this session
+    export NVM_DIR=\"\$HOME/.nvm\" && \
+    [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\" && \
+    [ -s \"\$NVM_DIR/bash_completion\" ] && . \"\$NVM_DIR/bash_completion\" && \
+
+    # Add NVM to shell profiles
+    for profile in ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile; do
+      if [ -f \"\$profile\" ] && ! grep -q 'NVM_DIR' \"\$profile\"; then
+        echo '' >> \"\$profile\" && \
+        echo '# NVM Configuration' >> \"\$profile\" && \
+        echo 'export NVM_DIR=\"\$HOME/.nvm\"' >> \"\$profile\" && \
+        echo '[ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"' >> \"\$profile\" && \
+        echo '[ -s \"\$NVM_DIR/bash_completion\" ] && . \"\$NVM_DIR/bash_completion\"' >> \"\$profile\"
+      fi
+    done && \
+
+    # Install Node.js 18
+    echo 'INFO: Installing Node.js 18...' && \
+    nvm install 18 && nvm use 18 && nvm alias default 18 && \
+
+    # Verify Node installation
+    command -v node >/dev/null 2>&1 || { echo 'ERROR: Node.js installation verification failed'; exit 1; } && \
+
+    # Install Claude Code
+    echo 'INFO: Installing Claude Code...' && \
+    npm install -g @anthropic-ai/claude-code && \
+
+    # Verify Claude Code installation
+    command -v claude >/dev/null 2>&1 || { echo 'ERROR: Claude Code installation verification failed'; exit 1; }
+  "; then
+    print_error "Claude Code installation failed"
+    exit 1
+  fi
+
+  # Create CLAUDE.md file in project root
+  if [ ! -f "CLAUDE.md" ]; then
+    cat > "CLAUDE.md" << 'EOF'
+# Tomcat Development Environment
+
+This is a Tomcat-based Java web development environment with Docker support.
+
+## Project Structure
+- `webapps/` - Tomcat web applications
+- `projects/` - Maven projects and libraries
+- `conf/` - Tomcat configuration
+- `logs/` - Tomcat logs
+
+## Available Tools
+- Tomcat 10.1 with JDK 17
+- Maven for project management
+- PostgreSQL/MariaDB/SQLite support
+- Development tools (make, git, etc.)
+
+## Usage
+- Access Tomcat Manager: http://localhost:9292/manager/html
+- Create projects: `make app name=myapp`
+- Build projects: `cd projects/myapp && mvn package`
+EOF
+    print_info "CLAUDE.md created in project root"
+  fi
+
+  print_info "Claude Code installation completed successfully!"
+  print_info "Run 'source ~/.bashrc' or start a new shell session inside container to use 'claude'"
+}
+
 # Create new Maven webapp
 create_webapp() {
   local app_name="$1"
   local db_type="$2"
-  
+
   if [ -z "$app_name" ]; then
     print_error "Application name is required"
     exit 1
   fi
-  
+
   if [ -d "projects/$app_name" ]; then
     print_error "Application '$app_name' already exists in projects/ directory"
     exit 1
   fi
+
+  # Ensure all archetypes are installed before proceeding
+  ensure_archetypes_installed
   
   if [ -n "$db_type" ]; then
     print_info "Creating webapp '$app_name' with $db_type database..."
@@ -720,6 +902,7 @@ create_webapp() {
       -DarchetypeVersion=1.0.0 \
       -DdbType="$db_type" \
       -DinteractiveMode=false \
+      -DarchetypeCatalog=local \
       -q
   else
     print_info "Creating webapp '$app_name'..."
@@ -732,6 +915,7 @@ create_webapp() {
       -DarchetypeArtifactId=tomcat-webapp-archetype \
       -DarchetypeVersion=1.0.0 \
       -DinteractiveMode=false \
+      -DarchetypeCatalog=local \
       -q
   fi
     
@@ -747,16 +931,19 @@ create_webapp() {
 create_library() {
   local lib_name="$1"
   local db_type="$2"
-  
+
   if [ -z "$lib_name" ]; then
     print_error "Library name is required"
     exit 1
   fi
-  
+
   if [ -d "projects/$lib_name" ]; then
     print_error "Library '$lib_name' already exists in projects/ directory"
     exit 1
   fi
+
+  # Ensure all archetypes are installed before proceeding
+  ensure_archetypes_installed
   
   if [ -n "$db_type" ]; then
     print_info "Creating library '$lib_name' with $db_type database..."
@@ -781,6 +968,7 @@ create_library() {
       -DarchetypeVersion=1.0.0 \
       -DdbType="$db_type" \
       -DinteractiveMode=false \
+      -DarchetypeCatalog=local \
       -q
   else
     print_info "Creating library '$lib_name'..."
@@ -793,6 +981,7 @@ create_library() {
       -DarchetypeArtifactId=tomcat-jar-library \
       -DarchetypeVersion=1.0.0 \
       -DinteractiveMode=false \
+      -DarchetypeCatalog=local \
       -q
   fi
     
@@ -818,6 +1007,10 @@ parse_args() {
         ;;
       --sqlite)
         INSTALL_SQLITE=true
+        shift
+        ;;
+      --claude)
+        INSTALL_CLAUDE=true
         shift
         ;;
       --create-webapp)
@@ -867,6 +1060,7 @@ show_usage() {
   echo "  --postgres             Also install and start PostgreSQL container"
   echo "  --mariadb              Also install and start MariaDB container"
   echo "  --sqlite               Also install SQLite3 in Tomcat container"
+  echo "  --claude               Install Claude Code with NVM and Node.js 18"
   echo "  --create-webapp <name> Create new Maven webapp with Makefile and README"
   echo "  --create-library <name> Create new JAR library with Makefile and README"
   echo "  --database <type>       Add database support (postgres, mariadb, sqlite)"
@@ -880,6 +1074,7 @@ show_usage() {
   echo "  $0 --create-webapp myapp     # Create new webapp 'myapp'"
   echo "  $0 --create-library mylib    # Create new JAR library 'mylib'"
   echo "  $0 --postgres --sqlite       # Setup Tomcat + PostgreSQL + SQLite3"
+  echo "  $0 --claude                  # Setup Tomcat + Claude Code"
 }
 
 # Main execution - Setup environment with two-phase .env check
@@ -966,6 +1161,11 @@ main() {
   if [ "$INSTALL_SQLITE" = "true" ]; then
     echo ""
     setup_sqlite
+  fi
+
+  if [ "$INSTALL_CLAUDE" = "true" ]; then
+    echo ""
+    install_claude_code
   fi
 }
 
