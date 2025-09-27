@@ -133,7 +133,7 @@ POSTGRES_DB=devdb
 POSTGRES_USER=devuser
 POSTGRES_PASSWORD=devpass123
 POSTGRES_ROOT_PASSWORD=rootpass123
-POSTGRES_DATA_DIR=/var/lib/postgresql/tomcat-dev
+POSTGRES_DATA_DIR=postgres-data
 
 # MariaDB Configuration (optional)
 MARIADB_ENABLED=false
@@ -144,7 +144,7 @@ MARIADB_DATABASE=devdb
 MARIADB_USER=devuser
 MARIADB_PASSWORD=devpass123
 MARIADB_ROOT_PASSWORD=rootpass123
-MARIADB_DATA_DIR=/var/lib/mysql/tomcat-dev
+MARIADB_DATA_DIR=mariadb-data
 
 # SQLite Configuration (optional)
 SQLITE_ENABLED=false
