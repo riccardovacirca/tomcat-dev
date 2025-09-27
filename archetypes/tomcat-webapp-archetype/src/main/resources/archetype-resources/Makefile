@@ -2,8 +2,14 @@
 
 MAKEFLAGS += --no-print-directory
 
+# Load environment variables
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
 APP_NAME = ${artifactId}
-CONTAINER_NAME = tomcat-dev
+CONTAINER_NAME ?= tomcat-dev
 TOMCAT_WEBAPPS = /usr/local/tomcat/webapps
 
 .PHONY: clean build deploy status help

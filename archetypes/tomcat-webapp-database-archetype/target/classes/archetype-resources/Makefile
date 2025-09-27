@@ -2,9 +2,27 @@
 
 MAKEFLAGS += --no-print-directory
 
+# Load environment variables
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
 APP_NAME = ${artifactId}
-CONTAINER_NAME = tomcat-dev
+CONTAINER_NAME ?= tomcat-dev
 TOMCAT_WEBAPPS = /usr/local/tomcat/webapps
+
+# Database Configuration (with fallback defaults)
+POSTGRES_CONTAINER_NAME ?= tomcat-dev-postgres
+POSTGRES_USER ?= devuser
+POSTGRES_PASSWORD ?= devpass123
+POSTGRES_DB ?= devdb
+MARIADB_CONTAINER_NAME ?= tomcat-dev-mariadb
+MARIADB_USER ?= devuser
+MARIADB_PASSWORD ?= devpass123
+MARIADB_DATABASE ?= devdb
+SQLITE_DATA_DIR ?= sqlite-data
+SQLITE_DATABASE ?= devdb.sqlite
 
 .PHONY: clean build deploy status help init-db
 
@@ -31,7 +49,7 @@ status:
 init-db:
 #if( $dbType == "postgres" )
 	@echo "Creating PostgreSQL table for items..."
-	@PGPASSWORD=devpass123 psql -h localhost -p 15432 -U devuser -d devdb -c \
+	@PGPASSWORD=$(POSTGRES_PASSWORD) psql -h $(POSTGRES_CONTAINER_NAME) -p 5432 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id SERIAL PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -42,7 +60,7 @@ init-db:
 	@echo "PostgreSQL table created"
 #elseif( $dbType == "mariadb" )
 	@echo "Creating MariaDB table for items..."
-	@mysql -h localhost -P 13306 -u devuser -pdevpass123 devdb -e \
+	@mysql -h $(MARIADB_CONTAINER_NAME) -P 3306 -u $(MARIADB_USER) -p$(MARIADB_PASSWORD) $(MARIADB_DATABASE) -e \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INT AUTO_INCREMENT PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -53,7 +71,7 @@ init-db:
 	@echo "MariaDB table created"
 #elseif( $dbType == "sqlite" )
 	@echo "Creating SQLite table for items..."
-	@sqlite3 /workspace/sqlite-data/devdb.sqlite \
+	@sqlite3 /workspace/$(SQLITE_DATA_DIR)/$(SQLITE_DATABASE) \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INTEGER PRIMARY KEY AUTOINCREMENT, \
 			title TEXT NOT NULL, \
