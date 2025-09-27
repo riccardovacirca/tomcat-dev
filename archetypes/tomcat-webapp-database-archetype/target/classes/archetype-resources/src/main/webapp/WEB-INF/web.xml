@@ -7,6 +7,17 @@
          
     <display-name>${artifactId} API</display-name>
     <description>${artifactId} web application with database support</description>
+
+    <!-- Servlet Configuration -->
+    <servlet>
+        <servlet-name>ItemServlet</servlet-name>
+        <servlet-class>com.example.servlet.ItemServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ItemServlet</servlet-name>
+        <url-pattern>/api/items/*</url-pattern>
+    </servlet-mapping>
     
     <!-- Database Resource Reference -->
     <resource-ref>

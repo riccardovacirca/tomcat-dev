@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/api/items/*")
 public class ItemServlet extends HttpServlet {
     
     private ItemRepository itemRepository;

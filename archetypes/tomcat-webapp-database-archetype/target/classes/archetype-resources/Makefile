@@ -31,7 +31,7 @@ status:
 init-db:
 #if( $dbType == "postgres" )
 	@echo "Creating PostgreSQL table for items..."
-	@docker exec tomcat-dev-postgres psql -U devuser -d devdb -c \
+	@PGPASSWORD=devpass123 psql -h localhost -p 15432 -U devuser -d devdb -c \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id SERIAL PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -42,7 +42,7 @@ init-db:
 	@echo "PostgreSQL table created"
 #elseif( $dbType == "mariadb" )
 	@echo "Creating MariaDB table for items..."
-	@docker exec tomcat-dev-mariadb mysql -u devuser -pdevpass123 devdb -e \
+	@mysql -h localhost -P 13306 -u devuser -pdevpass123 devdb -e \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INT AUTO_INCREMENT PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -53,7 +53,7 @@ init-db:
 	@echo "MariaDB table created"
 #elseif( $dbType == "sqlite" )
 	@echo "Creating SQLite table for items..."
-	@docker exec $(CONTAINER_NAME) sqlite3 /workspace/sqlite-data/devdb.sqlite \
+	@sqlite3 /workspace/sqlite-data/devdb.sqlite \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INTEGER PRIMARY KEY AUTOINCREMENT, \
 			title TEXT NOT NULL, \
