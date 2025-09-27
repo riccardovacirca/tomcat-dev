@@ -481,13 +481,20 @@ pull_postgres_image() {
   print_info "PostgreSQL image pulled successfully"
 }
 
-# Create PostgreSQL data directory
-create_postgres_directories() {
-  POSTGRES_DATA_DIR=$(grep POSTGRES_DATA_DIR .env | cut -d= -f2)
-  print_info "Creating PostgreSQL data directory..."
-  # Create directory with Docker to avoid sudo issues
-  docker run --rm -v "$POSTGRES_DATA_DIR":/data alpine mkdir -p /data 2>/dev/null || mkdir -p "$POSTGRES_DATA_DIR" 2>/dev/null || true
-  print_info "PostgreSQL directories created: $POSTGRES_DATA_DIR"
+# Create PostgreSQL data volume
+create_postgres_volume() {
+  POSTGRES_CONTAINER_NAME=$(grep POSTGRES_CONTAINER_NAME .env | cut -d= -f2)
+  VOLUME_NAME="${POSTGRES_CONTAINER_NAME}-data"
+
+  # Check if volume already exists (idempotency)
+  if docker volume inspect "$VOLUME_NAME" > /dev/null 2>&1; then
+    print_info "PostgreSQL volume $VOLUME_NAME already exists, skipping creation"
+    return 0
+  fi
+
+  print_info "Creating PostgreSQL data volume..."
+  docker volume create "$VOLUME_NAME"
+  print_info "PostgreSQL volume created: $VOLUME_NAME"
 }
 
 # Start PostgreSQL container
@@ -517,6 +524,8 @@ start_postgres_container() {
   
   print_info "Starting PostgreSQL container..."
   
+  VOLUME_NAME="${POSTGRES_CONTAINER_NAME}-data"
+
   docker run -d \
     --name "${POSTGRES_CONTAINER_NAME}" \
     --network "${NETWORK_NAME}" \
@@ -524,8 +533,7 @@ start_postgres_container() {
     -e POSTGRES_DB="${POSTGRES_DB}" \
     -e POSTGRES_USER="${POSTGRES_USER}" \
     -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
-    -e POSTGRES_INITDB_ROOT_PASSWORD="${POSTGRES_ROOT_PASSWORD}" \
-    -v "${POSTGRES_DATA_DIR}:/var/lib/postgresql/data" \
+    -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
     "postgres:${POSTGRES_VERSION}"
   
   print_info "PostgreSQL container started successfully"
@@ -561,9 +569,9 @@ wait_for_postgres() {
 setup_postgres() {
   print_header "PostgreSQL Database Setup"
   echo ""
-  
+
   pull_postgres_image
-  create_postgres_directories
+  create_postgres_volume
   start_postgres_container
   wait_for_postgres
   
