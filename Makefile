@@ -4,7 +4,7 @@ MAKEFLAGS += --no-print-directory
 
 PROJECTS_DIR = projects
 
-.PHONY: build deploy help app lib postgres default
+.PHONY: build deploy help app lib remove postgres default
 
 # Default target - shows help
 default:
@@ -14,6 +14,8 @@ help:
 	@echo "Usage:"
 	@echo "  make app name=<app_name> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
 	@echo "  make lib name=<lib_name> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
+	@echo "  make remove app=<app_name>              - Remove webapp and associated database"
+	@echo "  make remove lib=<lib_name>              - Remove JAR library"
 	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
 	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
 	@echo "  make postgres                           - Connect to PostgreSQL database"
@@ -23,8 +25,10 @@ help:
 	@echo "Examples:"
 	@echo "  make app name=my-webapp"
 	@echo "  make app name=my-api db=postgres"
+	@echo "  make remove app=my-webapp"
 	@echo "  make lib name=my-library"
 	@echo "  make lib name=auth-service db=postgres"
+	@echo "  make remove lib=my-library"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -78,6 +82,22 @@ lib:
 		./install.sh --create-library $(name) --database $(db); \
 	else \
 		./install.sh --create-library $(name); \
+	fi
+
+remove:
+	@if [ -n "$(app)" ] && [ -n "$(lib)" ]; then \
+		echo "Error: specify either app=<name> or lib=<name>, not both"; \
+		exit 1; \
+	fi
+	@if [ -z "$(app)" ] && [ -z "$(lib)" ]; then \
+		echo "Error: either app=<name> or lib=<name> parameter required"; \
+		echo "Usage: make remove app=<app_name> OR make remove lib=<lib_name>"; \
+		exit 1; \
+	fi
+	@if [ -n "$(app)" ]; then \
+		./install.sh --remove-webapp $(app); \
+	else \
+		./install.sh --remove-library $(lib); \
 	fi
 
 postgres:

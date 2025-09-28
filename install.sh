@@ -9,6 +9,8 @@ INSTALL_SQLITE=false
 INSTALL_CLAUDE=false
 CREATE_WEBAPP=""
 CREATE_LIBRARY=""
+REMOVE_WEBAPP=""
+REMOVE_LIBRARY=""
 DATABASE_TYPE=""
 
 print_info() {
@@ -979,6 +981,64 @@ create_sqlite_webapp_database() {
   print_info "Database: ${app_name}.sqlite | Location: ${sqlite_data_dir}/${app_name}.sqlite"
 }
 
+# Remove PostgreSQL database and user for webapp
+remove_postgres_webapp_database() {
+  local app_name="$1"
+  local container_name=$(grep POSTGRES_CONTAINER_NAME .env | cut -d= -f2)
+  local admin_user=$(grep POSTGRES_USER .env | cut -d= -f2)
+  local admin_password=$(grep POSTGRES_PASSWORD .env | cut -d= -f2)
+
+  print_info "Removing PostgreSQL database '$app_name' and user '$app_name'..."
+
+  # Connect to PostgreSQL via network using admin credentials
+  export PGPASSWORD="$admin_password"
+
+  # Terminate all connections to the database
+  docker exec "$container_name" psql -U "$admin_user" -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$app_name';" 2>/dev/null || true
+
+  # Drop database
+  docker exec "$container_name" psql -U "$admin_user" -d postgres -c "DROP DATABASE IF EXISTS $app_name;" 2>/dev/null || print_info "Database '$app_name' not found"
+
+  # Drop user
+  docker exec "$container_name" psql -U "$admin_user" -d postgres -c "DROP USER IF EXISTS $app_name;" 2>/dev/null || print_info "User '$app_name' not found"
+
+  print_info "PostgreSQL cleanup complete for webapp '$app_name'"
+}
+
+# Remove MariaDB database and user for webapp
+remove_mariadb_webapp_database() {
+  local app_name="$1"
+  local container_name=$(grep MARIADB_CONTAINER_NAME .env | cut -d= -f2)
+  local admin_user=$(grep MARIADB_USER .env | cut -d= -f2)
+  local admin_password=$(grep MARIADB_PASSWORD .env | cut -d= -f2)
+
+  print_info "Removing MariaDB database '$app_name' and user '$app_name'..."
+
+  # Drop database and user
+  docker exec "$container_name" mysql -u "$admin_user" -p"$admin_password" -e "DROP DATABASE IF EXISTS $app_name;" 2>/dev/null || print_info "Database '$app_name' not found"
+  docker exec "$container_name" mysql -u "$admin_user" -p"$admin_password" -e "DROP USER IF EXISTS '$app_name'@'%';" 2>/dev/null || print_info "User '$app_name' not found"
+
+  print_info "MariaDB cleanup complete for webapp '$app_name'"
+}
+
+# Remove SQLite database for webapp
+remove_sqlite_webapp_database() {
+  local app_name="$1"
+  local sqlite_data_dir=$(grep SQLITE_DATA_DIR .env | cut -d= -f2)
+
+  print_info "Removing SQLite database for webapp '$app_name'..."
+
+  # Remove SQLite database file
+  if [ -f "${sqlite_data_dir}/${app_name}.sqlite" ]; then
+    rm -f "${sqlite_data_dir}/${app_name}.sqlite"
+    print_info "Removed database file: ${sqlite_data_dir}/${app_name}.sqlite"
+  else
+    print_info "Database file not found: ${sqlite_data_dir}/${app_name}.sqlite"
+  fi
+
+  print_info "SQLite cleanup complete for webapp '$app_name'"
+}
+
 # Create new Maven webapp
 create_webapp() {
   local app_name="$1"
@@ -1055,6 +1115,90 @@ create_webapp() {
   fi
 
   print_info "Created: projects/$app_name/"
+}
+
+# Remove webapp and associated database
+remove_webapp() {
+  local app_name="$1"
+
+  if [ -z "$app_name" ]; then
+    print_error "Application name is required"
+    exit 1
+  fi
+
+  if [ ! -d "projects/$app_name" ]; then
+    print_error "Application '$app_name' not found in projects/ directory"
+    exit 1
+  fi
+
+  print_info "Removing webapp '$app_name'..."
+
+  # Determine database type by checking context.xml
+  local context_xml="projects/$app_name/src/main/resources/META-INF/context.xml"
+  if [ -f "$context_xml" ]; then
+    if grep -q "postgresql" "$context_xml"; then
+      print_info "Detected PostgreSQL database, removing..."
+      remove_postgres_webapp_database "$app_name"
+    elif grep -q "mariadb\|mysql" "$context_xml"; then
+      print_info "Detected MariaDB database, removing..."
+      remove_mariadb_webapp_database "$app_name"
+    elif grep -q "sqlite" "$context_xml"; then
+      print_info "Detected SQLite database, removing..."
+      remove_sqlite_webapp_database "$app_name"
+    else
+      print_info "No database configuration detected"
+    fi
+  else
+    print_info "No context.xml found, skipping database cleanup"
+  fi
+
+  # Remove deployed webapp from Tomcat
+  local container_name=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
+  if [ -n "$container_name" ]; then
+    print_info "Removing deployed webapp from Tomcat..."
+    docker exec "$container_name" rm -rf "/usr/local/tomcat/webapps/${app_name}" 2>/dev/null || true
+    docker exec "$container_name" rm -f "/usr/local/tomcat/webapps/${app_name}.war" 2>/dev/null || true
+  fi
+
+  # Remove project directory
+  print_info "Removing project directory..."
+  rm -rf "projects/$app_name"
+
+  print_info "Webapp '$app_name' and associated resources removed successfully"
+}
+
+# Remove library
+remove_library() {
+  local lib_name="$1"
+
+  if [ -z "$lib_name" ]; then
+    print_error "Library name is required"
+    exit 1
+  fi
+
+  if [ ! -d "projects/$lib_name" ]; then
+    print_error "Library '$lib_name' not found in projects/ directory"
+    exit 1
+  fi
+
+  print_info "Removing library '$lib_name'..."
+
+  # Check if library has database support by looking for any database-related files
+  if [ -f "projects/$lib_name/src/main/resources/database.properties" ] || [ -f "projects/$lib_name/src/main/resources/META-INF/context.xml" ]; then
+    print_info "Library has database configuration, checking for cleanup..."
+
+    # For libraries, we don't create dedicated databases, but we should check for any configuration
+    local context_xml="projects/$lib_name/src/main/resources/META-INF/context.xml"
+    if [ -f "$context_xml" ]; then
+      print_info "Found database configuration in library, but libraries typically don't have dedicated databases"
+    fi
+  fi
+
+  # Remove project directory
+  print_info "Removing library directory..."
+  rm -rf "projects/$lib_name"
+
+  print_info "Library '$lib_name' removed successfully"
 }
 
 create_library() {
@@ -1164,6 +1308,22 @@ parse_args() {
         CREATE_LIBRARY="$2"
         shift 2
         ;;
+      --remove-webapp)
+        if [ -z "$2" ]; then
+          print_error "--remove-webapp requires an application name"
+          exit 1
+        fi
+        REMOVE_WEBAPP="$2"
+        shift 2
+        ;;
+      --remove-library)
+        if [ -z "$2" ]; then
+          print_error "--remove-library requires a library name"
+          exit 1
+        fi
+        REMOVE_LIBRARY="$2"
+        shift 2
+        ;;
       --database)
         if [ -z "$2" ]; then
           print_error "--database requires a database type (postgres, mariadb, sqlite)"
@@ -1198,6 +1358,8 @@ show_usage() {
   echo "  --claude               Install Claude Code with NVM and Node.js 18"
   echo "  --create-webapp <name> Create new Maven webapp with Makefile and README"
   echo "  --create-library <name> Create new JAR library with Makefile and README"
+  echo "  --remove-webapp <name>  Remove webapp and associated database"
+  echo "  --remove-library <name> Remove JAR library"
   echo "  --database <type>       Add database support (postgres, mariadb, sqlite)"
   echo "  --help, -h             Show this help"
   echo ""
@@ -1208,6 +1370,8 @@ show_usage() {
   echo "  $0 --sqlite                  # Setup Tomcat + SQLite3"
   echo "  $0 --create-webapp myapp     # Create new webapp 'myapp'"
   echo "  $0 --create-library mylib    # Create new JAR library 'mylib'"
+  echo "  $0 --remove-webapp myapp     # Remove webapp 'myapp' and database"
+  echo "  $0 --remove-library mylib    # Remove library 'mylib'"
   echo "  $0 --postgres --sqlite       # Setup Tomcat + PostgreSQL + SQLite3"
   echo "  $0 --claude                  # Setup Tomcat + Claude Code"
 }
@@ -1222,7 +1386,17 @@ main() {
     create_webapp "$CREATE_WEBAPP" "$DATABASE_TYPE"
     exit 0
   fi
-  
+
+  if [ -n "$REMOVE_WEBAPP" ]; then
+    remove_webapp "$REMOVE_WEBAPP"
+    exit 0
+  fi
+
+  if [ -n "$REMOVE_LIBRARY" ]; then
+    remove_library "$REMOVE_LIBRARY"
+    exit 0
+  fi
+
   if [ -n "$CREATE_LIBRARY" ]; then
     create_library "$CREATE_LIBRARY" "$DATABASE_TYPE"
     exit 0
