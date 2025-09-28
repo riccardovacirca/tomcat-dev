@@ -179,32 +179,20 @@ create_gitignore() {
   if [ ! -f ".gitignore" ]; then
     print_info "Creating .gitignore file..."
     cat > ".gitignore" << 'EOF'
-# Ignore everything by default
 *
-
-# Except these files and directories
 !install.sh
 !Makefile
 !README.md
 !LICENSE
-!conf/
-!conf/**
 !examples/
 !examples/**
 !archetypes/
 !archetypes/**
-!projects/
-!projects/**
 
-# But ignore Maven build artifacts everywhere
 **/target/
 target/
-*.jar
 *.war
 *.class
-
-# Ignore specific generated projects (add as needed)
-# projects/example-project/
 EOF
     print_info ".gitignore file created"
   else
