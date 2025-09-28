@@ -24,10 +24,10 @@ MARIADB_DATABASE ?= devdb
 SQLITE_DATA_DIR ?= sqlite-data
 SQLITE_DATABASE ?= devdb.sqlite
 
-.PHONY: clean build deploy status help init-db
+.PHONY: clean build deploy status help init-db dbcli
 
 help:
-	@echo "Targets: clean, build, deploy, status, init-db"
+	@echo "Targets: clean, build, deploy, status, init-db, dbcli"
 
 clean:
 	@mvn clean -q
@@ -48,8 +48,8 @@ status:
 
 init-db:
 #if( $dbType == "postgres" )
-	@echo "Creating PostgreSQL table for items..."
-	@PGPASSWORD=$(POSTGRES_PASSWORD) psql -h $(POSTGRES_CONTAINER_NAME) -p 5432 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c \
+	@echo "Creating PostgreSQL table for items in database '$(APP_NAME)'..."
+	@PGPASSWORD=secret psql -h $(POSTGRES_CONTAINER_NAME) -p 5432 -U $(APP_NAME) -d $(APP_NAME) -c \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id SERIAL PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -57,10 +57,10 @@ init-db:
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP \
 		);"
-	@echo "PostgreSQL table created"
+	@echo "PostgreSQL table created in database '$(APP_NAME)'"
 #elseif( $dbType == "mariadb" )
-	@echo "Creating MariaDB table for items..."
-	@mysql -h $(MARIADB_CONTAINER_NAME) -P 3306 -u $(MARIADB_USER) -p$(MARIADB_PASSWORD) $(MARIADB_DATABASE) -e \
+	@echo "Creating MariaDB table for items in database '$(APP_NAME)'..."
+	@mysql -h $(MARIADB_CONTAINER_NAME) -P 3306 -u $(APP_NAME) -psecret $(APP_NAME) -e \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INT AUTO_INCREMENT PRIMARY KEY, \
 			title VARCHAR(255) NOT NULL, \
@@ -68,10 +68,10 @@ init-db:
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP \
 		);"
-	@echo "MariaDB table created"
+	@echo "MariaDB table created in database '$(APP_NAME)'"
 #elseif( $dbType == "sqlite" )
-	@echo "Creating SQLite table for items..."
-	@sqlite3 /workspace/$(SQLITE_DATA_DIR)/$(SQLITE_DATABASE) \
+	@echo "Creating SQLite table for items in database '$(APP_NAME).sqlite'..."
+	@sqlite3 /workspace/$(SQLITE_DATA_DIR)/$(APP_NAME).sqlite \
 		"CREATE TABLE IF NOT EXISTS items ( \
 			id INTEGER PRIMARY KEY AUTOINCREMENT, \
 			title TEXT NOT NULL, \
@@ -79,5 +79,20 @@ init-db:
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP, \
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP \
 		);"
-	@echo "SQLite table created"
+	@echo "SQLite table created in database '$(APP_NAME).sqlite'"
+#end
+
+dbcli:
+#if( $dbType == "postgres" )
+	@echo "Connecting to PostgreSQL database '$(APP_NAME)' as user '$(APP_NAME)'..."
+	@echo "Use \\q to quit"
+	@PGPASSWORD=secret psql -h $(POSTGRES_CONTAINER_NAME) -p 5432 -U $(APP_NAME) -d $(APP_NAME)
+#elseif( $dbType == "mariadb" )
+	@echo "Connecting to MariaDB database '$(APP_NAME)' as user '$(APP_NAME)'..."
+	@echo "Use 'exit' or 'quit' to quit"
+	@mysql -h $(MARIADB_CONTAINER_NAME) -P 3306 -u $(APP_NAME) -psecret $(APP_NAME)
+#elseif( $dbType == "sqlite" )
+	@echo "Connecting to SQLite database '$(APP_NAME).sqlite'..."
+	@echo "Use '.quit' to quit"
+	@sqlite3 /workspace/$(SQLITE_DATA_DIR)/$(APP_NAME).sqlite
 #end

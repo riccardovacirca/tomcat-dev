@@ -869,6 +869,116 @@ EOF
   print_info "Run 'source ~/.bashrc' or start a new shell session inside container to use 'claude'"
 }
 
+# Create database and user for webapp
+create_webapp_database() {
+  local app_name="$1"
+  local db_type="$2"
+
+  print_info "Creating database and user for webapp '$app_name'..."
+
+  case "$db_type" in
+    postgres)
+      create_postgres_webapp_database "$app_name"
+      ;;
+    mariadb)
+      create_mariadb_webapp_database "$app_name"
+      ;;
+    sqlite)
+      create_sqlite_webapp_database "$app_name"
+      ;;
+    *)
+      print_warn "Database creation not implemented for type: $db_type"
+      ;;
+  esac
+}
+
+# Create PostgreSQL database and user for webapp
+create_postgres_webapp_database() {
+  local app_name="$1"
+  local container_name=$(grep POSTGRES_CONTAINER_NAME .env | cut -d= -f2)
+  local admin_user=$(grep POSTGRES_USER .env | cut -d= -f2)
+  local admin_password=$(grep POSTGRES_PASSWORD .env | cut -d= -f2)
+
+  print_info "Creating PostgreSQL database '$app_name' with user '$app_name'..."
+
+  # Connect to PostgreSQL via network using admin credentials
+  export PGPASSWORD="$admin_password"
+
+  # Create user and database using network connection
+  # Check if user exists first
+  if psql -h "$container_name" -p 5432 -U "$admin_user" -d postgres -t -c "SELECT 1 FROM pg_roles WHERE rolname='${app_name}';" | grep -q 1; then
+    print_error "User '${app_name}' already exists in PostgreSQL. Please choose a different webapp name or manually drop the user first."
+    return 1
+  fi
+
+  # Create user
+  psql -h "$container_name" -p 5432 -U "$admin_user" -d postgres -c "CREATE USER ${app_name} WITH PASSWORD 'secret';" || {
+    print_error "Failed to create user '${app_name}'"
+    return 1
+  }
+
+  # Create database
+  psql -h "$container_name" -p 5432 -U "$admin_user" -d postgres -c "CREATE DATABASE ${app_name} OWNER ${app_name};" || {
+    print_error "Failed to create database '${app_name}'"
+    return 1
+  }
+
+  # Grant privileges
+  psql -h "$container_name" -p 5432 -U "$admin_user" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${app_name} TO ${app_name};" || {
+    print_error "Failed to grant privileges to user '${app_name}'"
+    return 1
+  }
+
+  # Unset password variable for security
+  unset PGPASSWORD
+
+  print_info "PostgreSQL setup complete for webapp '$app_name'"
+  print_info "Database: $app_name | User: $app_name | Password: secret"
+}
+
+# Create MariaDB database and user for webapp
+create_mariadb_webapp_database() {
+  local app_name="$1"
+  local container_name=$(grep MARIADB_CONTAINER_NAME .env | cut -d= -f2)
+  local root_password=$(grep MARIADB_ROOT_PASSWORD .env | cut -d= -f2)
+
+  print_info "Creating MariaDB database '$app_name' with user '$app_name'..."
+
+  # Check if container is running
+  if ! docker ps --format 'table {{.Names}}' | grep -q "^${container_name}$"; then
+    print_error "MariaDB container '${container_name}' is not running. Start it with: ./install.sh --mariadb"
+    return 1
+  fi
+
+  # Create user and database
+  docker exec "${container_name}" mysql -u root -p"${root_password}" -e "CREATE DATABASE IF NOT EXISTS ${app_name};" 2>/dev/null
+  docker exec "${container_name}" mysql -u root -p"${root_password}" -e "CREATE USER IF NOT EXISTS '${app_name}'@'%' IDENTIFIED BY 'secret';" 2>/dev/null
+  docker exec "${container_name}" mysql -u root -p"${root_password}" -e "GRANT ALL PRIVILEGES ON ${app_name}.* TO '${app_name}'@'%';" 2>/dev/null
+  docker exec "${container_name}" mysql -u root -p"${root_password}" -e "FLUSH PRIVILEGES;" 2>/dev/null
+
+  print_info "MariaDB setup complete for webapp '$app_name'"
+  print_info "Database: $app_name | User: $app_name | Password: secret"
+}
+
+# Create SQLite database for webapp
+create_sqlite_webapp_database() {
+  local app_name="$1"
+  local sqlite_data_dir=$(grep SQLITE_DATA_DIR .env | cut -d= -f2)
+  local container_name=$(grep "^CONTAINER_NAME=" .env | cut -d= -f2)
+
+  print_info "Creating SQLite database for webapp '$app_name'..."
+
+  # Create SQLite database file
+  touch "${sqlite_data_dir}/${app_name}.sqlite"
+
+  # Initialize database with a simple test table
+  local sqlite_path="/workspace/${sqlite_data_dir}/${app_name}.sqlite"
+  docker exec "${container_name}" sqlite3 "$sqlite_path" "CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT);" 2>/dev/null
+
+  print_info "SQLite setup complete for webapp '$app_name'"
+  print_info "Database: ${app_name}.sqlite | Location: ${sqlite_data_dir}/${app_name}.sqlite"
+}
+
 # Create new Maven webapp
 create_webapp() {
   local app_name="$1"
@@ -912,10 +1022,13 @@ create_webapp() {
       -DinteractiveMode=false \
       -DarchetypeCatalog=local \
       -q
+
+    # Return to original directory
+    cd ..
   else
     print_info "Creating webapp '$app_name'..."
     cd projects || exit 1
-    
+
     mvn archetype:generate \
       -DgroupId=com.example \
       -DartifactId="$app_name" \
@@ -925,14 +1038,22 @@ create_webapp() {
       -DinteractiveMode=false \
       -DarchetypeCatalog=local \
       -q
+
+    # Return to original directory
+    cd ..
   fi
     
-  if [ ! -d "$app_name" ]; then
+  if [ ! -d "projects/$app_name" ]; then
     print_error "Failed to create webapp '$app_name'"
     exit 1
   fi
   
   
+  # Create database and user for webapp if database type is specified
+  if [ -n "$db_type" ]; then
+    create_webapp_database "$app_name" "$db_type"
+  fi
+
   print_info "Created: projects/$app_name/"
 }
 
@@ -978,10 +1099,13 @@ create_library() {
       -DinteractiveMode=false \
       -DarchetypeCatalog=local \
       -q
+
+    # Return to original directory
+    cd ..
   else
     print_info "Creating library '$lib_name'..."
     cd projects || exit 1
-    
+
     mvn archetype:generate \
       -DgroupId=com.example \
       -DartifactId="$lib_name" \
@@ -991,9 +1115,12 @@ create_library() {
       -DinteractiveMode=false \
       -DarchetypeCatalog=local \
       -q
+
+    # Return to original directory
+    cd ..
   fi
-    
-  if [ ! -d "$lib_name" ]; then
+
+  if [ ! -d "projects/$lib_name" ]; then
     print_error "Failed to create library '$lib_name'"
     exit 1
   fi
