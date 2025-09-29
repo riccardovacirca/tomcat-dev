@@ -1,5 +1,9 @@
 # Database
 
+This document describes a database abstraction layer for Java web applications,
+providing a clean interface for database operations with support for
+transactions, prepared statements, and multiple database types.
+
 ## DatabaseInterface
 
 ```java
@@ -60,9 +64,9 @@ public class Database implements DatabaseInterface
 
 ### Database::open
 
-Apre una connessione con il server di database.
-Il nome JNDI `jdbc/MyDB` deve corrispondere alla risorsa configurata nel
-context.xml dell'applicazione.
+Opens a connection to the database server.
+The JNDI name `jdbc/MyDB` must match the resource configured in the
+application's context.xml.
 
 ```java
 @Override
@@ -76,7 +80,7 @@ public void open() throws Exception
 
 ### Database::close
 
-Chiude una connessione con il server di database
+Closes a connection to the database server
 
 ```java
 @Override
@@ -91,7 +95,7 @@ public void close()
 
 ### Database::connected
 
-Restituisce true se una connessione è aperta
+Returns true if a connection is open
 
 ```java
 @Override
@@ -107,7 +111,7 @@ public boolean connected()
 
 ### Database::begin
 
-Avvia una transazione
+Starts a transaction
 
 ```java
 @Override
@@ -119,7 +123,7 @@ public void begin() throws Exception
 
 ### Database::commit
 
-Chiude con successo una transazione
+Successfully commits a transaction
 
 ```java
 @Override
@@ -132,7 +136,7 @@ public void commit() throws Exception
 
 ### Database::rollback
 
-Chiude con errore una transazione
+Rolls back a transaction
 
 ```java
 @Override
@@ -145,7 +149,7 @@ public void rollback() throws Exception
 
 ### Database::query
 
-Esegue query di modifica (INSERT, UPDATE, DELETE)
+Executes modification queries (INSERT, UPDATE, DELETE)
 
 ```java
 @Override
@@ -153,10 +157,10 @@ public int query(String sql, Object... params)
     throws Exception
 {
   if (this.connection == null || this.connection.isClosed()) {
-    throw new Exception("Connessione non disponibile");
+    throw new Exception("Connection not available");
   }
   if (sql == null || sql.trim().isEmpty()) {
-    throw new Exception("SQL non valido");
+    throw new Exception("Invalid SQL");
   }
 
   PreparedStatement ps = this.connection.prepareStatement(sql);
@@ -171,7 +175,7 @@ public int query(String sql, Object... params)
 
 ### Database::select
 
-Esegue query di selezione (SELECT)
+Executes selection queries (SELECT)
 
 ```java
 @Override
@@ -179,10 +183,10 @@ public List<Map<String,Object>> select(String sql, Object... params)
     throws Exception
 {
   if (this.connection == null || this.connection.isClosed()) {
-    throw new Exception("Connessione non disponibile");
+    throw new Exception("Connection not available");
   }
   if (sql == null || sql.trim().isEmpty()) {
-    throw new Exception("SQL non valido");
+    throw new Exception("Invalid SQL");
   }
 
   PreparedStatement ps = this.connection.prepareStatement(sql);
@@ -211,7 +215,7 @@ public List<Map<String,Object>> select(String sql, Object... params)
 
 ### Database::lastInsertId
 
-Restituisce l'ID dell'ultimo record inserito
+Returns the ID of the last inserted record
 
 ```java
 @Override
@@ -236,7 +240,7 @@ public long lastInsertId()
   } else if (dbProduct.contains("oracle")) {
     query = "SELECT SEQ.CURRVAL FROM DUAL";
   } else {
-    throw new Exception("Database non supportato: " + dbProduct);
+    throw new Exception("Unsupported database: " + dbProduct);
   }
 
   PreparedStatement ps = this.connection.prepareStatement(query);
@@ -253,16 +257,16 @@ public long lastInsertId()
 
 ### Database::cursor
 
-Restituisce un cursore per iterare sui risultati
+Returns a cursor to iterate over results
 
 ```java
 @Override
 public CursorInterface cursor(String sql, Object... params) throws Exception {
   if (this.connection == null || this.connection.isClosed()) {
-    throw new Exception("Connessione non disponibile");
+    throw new Exception("Connection not available");
   }
   if (sql == null || sql.trim().isEmpty()) {
-    throw new Exception("SQL non valido");
+    throw new Exception("Invalid SQL");
   }
 
   PreparedStatement ps = this.connection.prepareStatement(sql);
@@ -271,6 +275,75 @@ public CursorInterface cursor(String sql, Object... params) throws Exception {
   }
   ResultSet rs = ps.executeQuery();
   return new Cursor(rs, ps);
+}
+```
+
+### Complete Database Usage Example
+
+Here's a comprehensive example demonstrating all Database class methods:
+
+```java
+import org.example.database.Database;
+import org.example.database.CursorInterface;
+import java.util.List;
+import java.util.Map;
+
+// Initialize database connection
+Database db = new Database("jdbc/MyDB");
+
+try {
+    // Open connection
+    db.open();
+
+    if (db.connected()) {
+        // Start transaction
+        db.begin();
+
+        try {
+            // Execute INSERT query
+            int insertedRows = db.query(
+                "INSERT INTO users (name, email, active) VALUES (?, ?, ?)",
+                "John Doe", "john@example.com", true
+            );
+            System.out.println("Inserted rows: " + insertedRows);
+
+            // Get last inserted ID
+            long userId = db.lastInsertId();
+            System.out.println("New user ID: " + userId);
+
+            // Execute UPDATE query
+            int updatedRows = db.query(
+                "UPDATE users SET active = ? WHERE id = ?",
+                false, userId
+            );
+            System.out.println("Updated rows: " + updatedRows);
+
+            // Execute SELECT query
+            List<Map<String,Object>> users = db.select(
+                "SELECT id, name, email, active FROM users WHERE id = ?",
+                userId
+            );
+
+            for (Map<String,Object> user : users) {
+                System.out.println("User: " + user.get("name") +
+                                 " (" + user.get("email") + ")");
+            }
+
+            // Commit transaction
+            db.commit();
+
+        } catch (Exception e) {
+            // Rollback on error
+            db.rollback();
+            throw e;
+        }
+    }
+
+} catch (Exception e) {
+    e.printStackTrace();
+} finally {
+    // Close connection
+    db.close();
 }
 ```
 
@@ -312,6 +385,8 @@ public class Cursor implements CursorInterface {
 
 ### Cursor::next
 
+Moves to the next row in the result set
+
 ```java
 @Override
 public boolean next() throws Exception {
@@ -320,6 +395,8 @@ public boolean next() throws Exception {
 ```
 
 ### Cursor::get
+
+Retrieves the value of the specified column from the current row
 
 ```java
   @Override
@@ -330,15 +407,97 @@ public boolean next() throws Exception {
 
 ### Cursor::close
 
+Closes the cursor and releases associated resources
+
 ```java
   @Override
   public void close() {
     try {
       if (this.resultSet != null) this.resultSet.close();
       if (this.statement != null) this.statement.close();
-    } catch (SQLException e) {
+    } catch (SQLException e) {}
+  }
+```
+
+### Complete Cursor Usage Example
+
+Here's a comprehensive example demonstrating all Cursor class methods in
+combination with Database:
+
+```java
+import org.example.database.Database;
+import org.example.database.CursorInterface;
+
+// Initialize database connection
+Database db = new Database("jdbc/MyDB");
+
+try {
+  // Open connection
+  db.open();
+
+  if (db.connected()) {
+    // Create cursor for large result set
+    CursorInterface cursor = db.cursor(
+      "SELECT id, name, email, active, created_at FROM users WHERE active = ? ORDER BY created_at",
+      true
+    );
+
+    try {
+      System.out.println("Processing active users:");
+      // Iterate through results using cursor
+      while (cursor.next()) {
+        // Get individual column values
+        Long id = (Long) cursor.get("id");
+        String name = (String) cursor.get("name");
+        String email = (String) cursor.get("email");
+        Boolean active = (Boolean) cursor.get("active");
+        java.sql.Timestamp createdAt = (java.sql.Timestamp) cursor.get("created_at");
+        // Process each row efficiently
+        System.out.printf("ID: %d, Name: %s, Email: %s, Active: %s, Created: %s%n",
+                        id, name, email, active, createdAt);
+        // Example: Process in batches or apply business logic
+        if (id % 100 == 0) {
+            System.out.println("Processed " + id + " records...");
+        }
+      }
+
+    } finally {
+      // Always close cursor to free resources
+      cursor.close();
+    }
+
+    // Example: Using cursor with transactions
+    db.begin();
+    try {
+        CursorInterface inactiveCursor = db.cursor(
+          "SELECT id FROM users WHERE active = ? AND last_login < ?",
+          false, "2023-01-01"
+        );
+
+        try {
+          while (inactiveCursor.next()) {
+            Long userId = (Long) inactiveCursor.get("id");
+            // Delete inactive users in transaction
+            db.query("DELETE FROM users WHERE id = ?", userId);
+          }
+        } finally {
+          inactiveCursor.close();
+        }
+
+        db.commit();
+        System.out.println("Inactive users cleaned up successfully");
+
+    } catch (Exception e) {
+        db.rollback();
+        System.err.println("Error during cleanup: " + e.getMessage());
     }
   }
+} catch (Exception e) {
+  e.printStackTrace();
+} finally {
+  // Close database connection
+  db.close();
+}
 ```
 
 ## JNDI resource
@@ -351,37 +510,33 @@ public boolean next() throws Exception {
           maxWaitMillis="10000" />
 ```
 
-## Istruzioni per creazione libreria
+## Build library
 
-### 1. Creare il progetto libreria
+### Create new library project
 
 ```bash
-make lib name=database-helper
-cd projects/database-helper
+make lib name=database-lib
+cd projects/database-lib
 ```
 
-### 2. Allineare il groupId
-
-Il Makefile generato usa `com.example` come groupId. Per allinearlo a `org.example`:
+### Set groupId
 
 ```bash
-# Rinominare le directory
 cd src/main/java
 mv com/example org/example
 ```
 
-**Modificare nei file Java il package declaration:**
+### Rename class packages
+
 ```java
-// Da: package com.example.database;
-// A:   package org.example.database;
+// From:  package com.example.database;
+// to:    package org.example.database;
 ```
 
-File da modificare: `CursorInterface.java`, `DatabaseInterface.java`, `Database.java`, `Cursor.java`
-
-### 3. Struttura del progetto
+### Add class and interface files to the project
 
 ```
-projects/database-helper/
+projects/database-lib/
 ├── pom.xml
 └── src/
     └── main/
@@ -395,70 +550,69 @@ projects/database-helper/
                         └── Cursor.java
 ```
 
-Copiare le implementazioni dalle sezioni precedenti del documento nei rispettivi file.
-
-### 4. Compilare la libreria
+### Build library
 
 ```bash
 make build
 ```
 
-### 5. Installare nel repository locale
+### Install locally
 
 ```bash
 make install
 ```
 
-### 6. Distribuire e usare la libreria
+## Distribute
 
-#### Caso 1: Trasferimento completo del progetto
+### Case 1: Complete project transfer
 
 ```bash
-# 1. Trasferire l'intera directory
-scp -r projects/database-helper/ destinazione:/path/to/projects/
+# 1. Transfer the entire directory
+scp -r projects/database-lib/ destination:/path/to/projects/
 
-# 2. Nel container destinazione
-cd /path/to/projects/database-helper
+# 2. In the destination container
+cd /path/to/projects/database-lib
 mvn install
 ```
 
-#### Caso 2: Trasferimento solo del JAR
+### Case 2: JAR-only transfer
 
 ```bash
-# 1. Trasferire solo il JAR
-scp projects/database-helper/target/database-helper-1.0-SNAPSHOT.jar destinazione:/tmp/
+# 1. Transfer only the JAR
+scp projects/database-lib/target/database-lib-1.0-SNAPSHOT.jar destination:/tmp/
 
-# 2. Nel container destinazione
+# 2. In the destination container
 mvn install:install-file \
-  -Dfile=/tmp/database-helper-1.0-SNAPSHOT.jar \
+  -Dfile=/tmp/database-lib-1.0-SNAPSHOT.jar \
   -DgroupId=org.example \
-  -DartifactId=database-helper \
+  -DartifactId=database-lib \
   -Dversion=1.0-SNAPSHOT \
   -Dpackaging=jar
 ```
 
-#### Caso 3: Copia diretta in WEB-INF/lib
+### Case 3: Direct copy to WEB-INF/lib
 
 ```bash
-# 1. Trasferire il JAR nella webapp
-scp projects/database-helper/target/database-helper-1.0-SNAPSHOT.jar destinazione:/webapp/WEB-INF/lib/
+# 1. Transfer the JAR to the webapp
+scp projects/database-lib/target/database-lib-1.0-SNAPSHOT.jar destination:/webapp/WEB-INF/lib/
 
-# 2. Non serve dependency nel pom.xml
-# 3. Riavviare Tomcat
+# 2. No dependency needed in pom.xml
+# 3. Restart Tomcat
 ```
 
-#### Configurazione webapp (Casi 1 e 2)
+## Using in the application
 
-**Nel pom.xml della webapp aggiungere:**
+### Configure webapp pom.xml (Cases 1 and 2)
+
 ```xml
 <dependency>
   <groupId>org.example</groupId>
-  <artifactId>database-helper</artifactId>
+  <artifactId>database-lib</artifactId>
   <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-#### Esempio d'uso
+### Import in code
 
 ```java
 import org.example.database.Database;
@@ -472,5 +626,4 @@ db.close();
 ```
 
 ---
-
 @2020-2025 Riccardo Vacirca - All right reserved.
