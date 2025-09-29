@@ -4,36 +4,30 @@ This document describes a database abstraction layer for Java web applications,
 providing a clean interface for database operations with support for
 transactions, prepared statements, and multiple database types.
 
-## DatabaseInterface
+## JNDI Configuration
 
-```java
-package org.example.database;
+JNDI (Java Naming and Directory Interface) is used to configure database
+connections in Tomcat applications. The database connection is defined as a
+resource in the application's `META-INF/context.xml` file and accessed by name
+in the Java code.
 
-import java.util.List;
-import java.util.Map;
-
-public interface DatabaseInterface
-{
-  void open() throws Exception;
-  void close();
-  boolean connected();
-
-  void begin() throws Exception;
-  void commit() throws Exception;
-  void rollback() throws Exception;
-
-  int query(String sql, Object... params) throws Exception;
-  List<Map<String,Object>> select(String sql, Object... params) throws Exception;
-  CursorInterface cursor(String sql, Object... params) throws Exception;
-
-  long lastInsertId() throws Exception;
-}
+```xml
+<Resource name="jdbc/MyDB"
+          type="javax.sql.DataSource"
+          maxTotal="20"
+          maxIdle="10"
+          maxWaitMillis="10000" />
 ```
+
+This configuration creates a connection pool that the Database class accesses
+using the JNDI name `"jdbc/MyDB"`. The connection pooling is managed
+automatically by Tomcat.
+
 
 ## Database
 
 ```java
-package org.example.database;
+package jtools;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -42,13 +36,11 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
-public class Database implements DatabaseInterface
+public class Database
 {
   private final String source;
   private Connection connection;
@@ -56,6 +48,49 @@ public class Database implements DatabaseInterface
   public Database(String src) {
     this.source = src;
     this.connection = null;
+  }
+
+  // Nested static classes for structured data
+  public static class Record extends HashMap<String, Object> {
+  }
+
+  public static class Recordset extends ArrayList<Record> {
+  }
+
+  public static class Cursor {
+    private final ResultSet resultSet;
+    private final PreparedStatement statement;
+
+    public Cursor(ResultSet rs, PreparedStatement ps) {
+      this.resultSet = rs;
+      this.statement = ps;
+    }
+
+    public boolean next() throws Exception {
+      return this.resultSet.next();
+    }
+
+    public Object get(String column) throws Exception {
+      return this.resultSet.getObject(column);
+    }
+
+    public Record getRow() throws Exception {
+      Record row = new Record();
+      ResultSetMetaData meta = this.resultSet.getMetaData();
+      int columnCount = meta.getColumnCount();
+
+      for (int i = 1; i <= columnCount; i++) {
+        row.put(meta.getColumnName(i), this.resultSet.getObject(i));
+      }
+      return row;
+    }
+
+    public void close() {
+      try {
+        if (this.resultSet != null) this.resultSet.close();
+        if (this.statement != null) this.statement.close();
+      } catch (SQLException e) {}
+    }
   }
 
   // methods...
@@ -69,7 +104,6 @@ The JNDI name `jdbc/MyDB` must match the resource configured in the
 application's context.xml.
 
 ```java
-@Override
 public void open() throws Exception
 {
   Context ctx = new InitialContext();
@@ -83,7 +117,6 @@ public void open() throws Exception
 Closes a connection to the database server
 
 ```java
-@Override
 public void close()
 {
   if (this.connection != null) {
@@ -98,7 +131,6 @@ public void close()
 Returns true if a connection is open
 
 ```java
-@Override
 public boolean connected()
 {
   try {
@@ -114,7 +146,6 @@ public boolean connected()
 Starts a transaction
 
 ```java
-@Override
 public void begin() throws Exception
 {
   this.connection.setAutoCommit(false);
@@ -126,7 +157,6 @@ public void begin() throws Exception
 Successfully commits a transaction
 
 ```java
-@Override
 public void commit() throws Exception
 {
   this.connection.commit();
@@ -139,7 +169,6 @@ public void commit() throws Exception
 Rolls back a transaction
 
 ```java
-@Override
 public void rollback() throws Exception
 {
   this.connection.rollback();
@@ -152,7 +181,6 @@ public void rollback() throws Exception
 Executes modification queries (INSERT, UPDATE, DELETE)
 
 ```java
-@Override
 public int query(String sql, Object... params)
     throws Exception
 {
@@ -178,8 +206,7 @@ public int query(String sql, Object... params)
 Executes selection queries (SELECT)
 
 ```java
-@Override
-public List<Map<String,Object>> select(String sql, Object... params)
+public Recordset select(String sql, Object... params)
     throws Exception
 {
   if (this.connection == null || this.connection.isClosed()) {
@@ -195,12 +222,12 @@ public List<Map<String,Object>> select(String sql, Object... params)
   }
   ResultSet rs = ps.executeQuery();
 
-  List<Map<String,Object>> result = new ArrayList<>();
+  Recordset result = new Recordset();
   ResultSetMetaData meta = rs.getMetaData();
   int columnCount = meta.getColumnCount();
 
   while (rs.next()) {
-    Map<String,Object> row = new HashMap<>();
+    Record row = new Record();
     for (int i = 1; i <= columnCount; i++) {
       row.put(meta.getColumnName(i), rs.getObject(i));
     }
@@ -218,7 +245,6 @@ public List<Map<String,Object>> select(String sql, Object... params)
 Returns the ID of the last inserted record
 
 ```java
-@Override
 public long lastInsertId()
     throws Exception
 {
@@ -260,8 +286,7 @@ public long lastInsertId()
 Returns a cursor to iterate over results
 
 ```java
-@Override
-public CursorInterface cursor(String sql, Object... params) throws Exception {
+public Cursor cursor(String sql, Object... params) throws Exception {
   if (this.connection == null || this.connection.isClosed()) {
     throw new Exception("Connection not available");
   }
@@ -278,15 +303,10 @@ public CursorInterface cursor(String sql, Object... params) throws Exception {
 }
 ```
 
-### Complete Database Usage Example
-
-Here's a comprehensive example demonstrating all Database class methods:
+### Database Usage Example
 
 ```java
-import org.example.database.Database;
-import org.example.database.CursorInterface;
-import java.util.List;
-import java.util.Map;
+import jtools.Database;
 
 // Initialize database connection
 Database db = new Database("jdbc/MyDB");
@@ -319,12 +339,12 @@ try {
             System.out.println("Updated rows: " + updatedRows);
 
             // Execute SELECT query
-            List<Map<String,Object>> users = db.select(
+            Database.Recordset users = db.select(
                 "SELECT id, name, email, active FROM users WHERE id = ?",
                 userId
             );
 
-            for (Map<String,Object> user : users) {
+            for (Database.Record user : users) {
                 System.out.println("User: " + user.get("name") +
                                  " (" + user.get("email") + ")");
             }
@@ -348,85 +368,19 @@ try {
 ```
 
 
-## CursorInterface
+### Database::Cursor
+
+The Cursor is now a nested static class within Database, providing methods to iterate through query results:
+
+- `next()` - Moves to the next row
+- `get(String column)` - Gets a specific column value
+- `getRow()` - Gets the entire row as a Record
+- `close()` - Closes the cursor and releases resources
+
+### Cursor Usage Example
 
 ```java
-package org.example.database;
-
-public interface CursorInterface extends AutoCloseable
-{
-  boolean next() throws Exception;
-  Object get(String column) throws Exception;
-  void close();
-}
-```
-
-## Cursor
-
-```java
-package org.example.database;
-
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-public class Cursor implements CursorInterface {
-  private final ResultSet resultSet;
-  private final PreparedStatement statement;
-
-  public Cursor(ResultSet rs, PreparedStatement ps) {
-    this.resultSet = rs;
-    this.statement = ps;
-  }
-
-  // methods...
-}
-```
-
-### Cursor::next
-
-Moves to the next row in the result set
-
-```java
-@Override
-public boolean next() throws Exception {
-  return this.resultSet.next();
-}
-```
-
-### Cursor::get
-
-Retrieves the value of the specified column from the current row
-
-```java
-  @Override
-  public Object get(String column) throws Exception {
-    return this.resultSet.getObject(column);
-  }
-```
-
-### Cursor::close
-
-Closes the cursor and releases associated resources
-
-```java
-  @Override
-  public void close() {
-    try {
-      if (this.resultSet != null) this.resultSet.close();
-      if (this.statement != null) this.statement.close();
-    } catch (SQLException e) {}
-  }
-```
-
-### Complete Cursor Usage Example
-
-Here's a comprehensive example demonstrating all Cursor class methods in
-combination with Database:
-
-```java
-import org.example.database.Database;
-import org.example.database.CursorInterface;
+import jtools.Database;
 
 // Initialize database connection
 Database db = new Database("jdbc/MyDB");
@@ -437,7 +391,7 @@ try {
 
   if (db.connected()) {
     // Create cursor for large result set
-    CursorInterface cursor = db.cursor(
+    Database.Cursor cursor = db.cursor(
       "SELECT id, name, email, active, created_at FROM users WHERE active = ? ORDER BY created_at",
       true
     );
@@ -446,15 +400,25 @@ try {
       System.out.println("Processing active users:");
       // Iterate through results using cursor
       while (cursor.next()) {
-        // Get individual column values
+        // Method 1: Get entire row as Record
+        Database.Record userRecord = cursor.getRow();
+        System.out.println("Complete record: " + userRecord);
+
+        // Method 2: Get individual column values (original approach)
         Long id = (Long) cursor.get("id");
         String name = (String) cursor.get("name");
         String email = (String) cursor.get("email");
         Boolean active = (Boolean) cursor.get("active");
         java.sql.Timestamp createdAt = (java.sql.Timestamp) cursor.get("created_at");
+
+        // Method 3: Access values from the Record
+        Long idFromRecord = (Long) userRecord.get("id");
+        String nameFromRecord = (String) userRecord.get("name");
+
         // Process each row efficiently
         System.out.printf("ID: %d, Name: %s, Email: %s, Active: %s, Created: %s%n",
-                        id, name, email, active, createdAt);
+                          id, name, email, active, createdAt);
+
         // Example: Process in batches or apply business logic
         if (id % 100 == 0) {
             System.out.println("Processed " + id + " records...");
@@ -469,14 +433,20 @@ try {
     // Example: Using cursor with transactions
     db.begin();
     try {
-        CursorInterface inactiveCursor = db.cursor(
+        Database.Cursor inactiveCursor = db.cursor(
           "SELECT id FROM users WHERE active = ? AND last_login < ?",
           false, "2023-01-01"
         );
 
         try {
           while (inactiveCursor.next()) {
+            // Option 1: Get specific field
             Long userId = (Long) inactiveCursor.get("id");
+
+            // Option 2: Get entire row (useful for logging/debugging)
+            Database.Record inactiveUser = inactiveCursor.getRow();
+            System.out.println("Deleting user: " + inactiveUser);
+
             // Delete inactive users in transaction
             db.query("DELETE FROM users WHERE id = ?", userId);
           }
@@ -500,16 +470,6 @@ try {
 }
 ```
 
-## JNDI resource
-
-```xml
-<Resource name="jdbc/MyDB"
-          type="javax.sql.DataSource"
-          maxTotal="20"
-          maxIdle="10"
-          maxWaitMillis="10000" />
-```
-
 ## Build library
 
 ### Create new library project
@@ -523,17 +483,16 @@ cd projects/database-lib
 
 ```bash
 cd src/main/java
-mv com/example org/example
+mv com/example jtools
 ```
 
 ### Rename class packages
 
 ```java
-// From:  package com.example.database;
-// to:    package org.example.database;
+// Set package to: package jtools;
 ```
 
-### Add class and interface files to the project
+### Add class files to the project
 
 ```
 projects/database-lib/
@@ -541,13 +500,8 @@ projects/database-lib/
 └── src/
     └── main/
         └── java/
-            └── org/
-                └── example/
-                    └── database/
-                        ├── CursorInterface.java
-                        ├── DatabaseInterface.java
-                        ├── Database.java
-                        └── Cursor.java
+            └── jtools/
+                └── Database.java
 ```
 
 ### Build library
@@ -584,7 +538,7 @@ scp projects/database-lib/target/database-lib-1.0-SNAPSHOT.jar destination:/tmp/
 # 2. In the destination container
 mvn install:install-file \
   -Dfile=/tmp/database-lib-1.0-SNAPSHOT.jar \
-  -DgroupId=org.example \
+  -DgroupId=jtools \
   -DartifactId=database-lib \
   -Dversion=1.0-SNAPSHOT \
   -Dpackaging=jar
@@ -606,7 +560,7 @@ scp projects/database-lib/target/database-lib-1.0-SNAPSHOT.jar destination:/weba
 
 ```xml
 <dependency>
-  <groupId>org.example</groupId>
+  <groupId>jtools</groupId>
   <artifactId>database-lib</artifactId>
   <version>1.0-SNAPSHOT</version>
 </dependency>
@@ -615,13 +569,11 @@ scp projects/database-lib/target/database-lib-1.0-SNAPSHOT.jar destination:/weba
 ### Import in code
 
 ```java
-import org.example.database.Database;
-import java.util.List;
-import java.util.Map;
+import jtools.Database;
 
 Database db = new Database("jdbc/MyDB");
 db.open();
-List<Map<String,Object>> users = db.select("SELECT * FROM users WHERE active = ?", true);
+Database.Recordset users = db.select("SELECT * FROM users WHERE active = ?", true);
 db.close();
 ```
 

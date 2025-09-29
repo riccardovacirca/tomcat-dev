@@ -1,35 +1,105 @@
-# ${artifactId} Makefile
-
 MAKEFLAGS += --no-print-directory
 
-# Load environment variables
-ifneq (,$(wildcard .env))
-    include .env
-    export
-endif
+# ${artifactId} Library Build System
+# Usage: make [target]
 
-APP_NAME = ${artifactId}
-CONTAINER_NAME ?= tomcat-dev
-TOMCAT_WEBAPPS = /usr/local/tomcat/webapps
+.DEFAULT_GOAL := help
 
-.PHONY: clean build deploy status help
+# Build targets
+build:
+	@echo "Building ${artifactId} library..."
+	@mvn package -q
 
-help:
-	@echo "Targets: clean, build, deploy, status"
+compile:
+	@echo "Compiling ${artifactId} library..."
+	@mvn compile -q
 
+# Testing
+test:
+	@echo "Running unit tests for ${artifactId}..."
+	@mvn test
+
+test-verbose:
+	@echo "Running unit tests with verbose output..."
+	@mvn test -X
+
+# Install to local Maven repository
+install:
+	@echo "Installing ${artifactId} to local Maven repository..."
+	@mvn install -q
+
+# Clean build artifacts
 clean:
+	@echo "Cleaning build artifacts..."
 	@mvn clean -q
 
-build:
-	@echo "Building $(APP_NAME)..."
-	@mvn package -q -DskipTests
-	@echo "Build complete: target/$(APP_NAME).war"
+# Generate Javadoc
+docs:
+	@echo "Generating Javadoc..."
+	@mvn javadoc:javadoc -q
 
-deploy: build
-	@echo "Deploying to $(CONTAINER_NAME)..."
-	@rm -rf $(TOMCAT_WEBAPPS)/$(APP_NAME)*
-	@cp target/$(APP_NAME).war $(TOMCAT_WEBAPPS)/
-	@echo "Deployed: http://localhost:9292/$(APP_NAME)"
+# Development targets
+dev-build: clean compile test
+	@echo "${artifactId} development build completed"
 
-status:
-	@ls -la $(TOMCAT_WEBAPPS)/$(APP_NAME)* 2>/dev/null || echo "Not deployed"
+dev-install: clean install
+	@echo "${artifactId} installed to local repository"
+
+# Check if library is available in local repo
+check-repo:
+	@echo "Checking if ${artifactId} is installed in local Maven repository:"
+	@find ~/.m2/repository -name "*${artifactId}*" -type f 2>/dev/null | head -5 || echo "Library not found in local repository"
+
+# Show Maven coordinates for using this library
+coordinates:
+	@echo "To use this library in other projects, add this dependency:"
+	@echo ""
+	@echo "<dependency>"
+	@echo "    <groupId>${groupId}</groupId>"
+	@echo "    <artifactId>${artifactId}</artifactId>"
+	@echo "    <version>${version}</version>"
+	@echo "</dependency>"
+
+# Change GroupId to new name
+groupid:
+	@if [ -z "$(name)" ]; then \
+		echo "Usage: make groupid name=<new_group_id>"; \
+		exit 1; \
+	fi; \
+	sed -i 's|<groupId>${groupId}</groupId>|<groupId>$(name)</groupId>|g' pom.xml; \
+	find src -name "*.java" -exec sed -i 's|package com\.example|package $(name)|g' {} \;; \
+	if [ -d "src/main/java/com/example" ]; then \
+		mkdir -p "src/main/java/$(name)"; \
+		mv src/main/java/com/example/* "src/main/java/$(name)/"; \
+		rm -rf src/main/java/com/example; \
+		rm -rf src/main/java/com 2>/dev/null || true; \
+	fi; \
+	if [ -d "src/test/java/com/example" ]; then \
+		mkdir -p "src/test/java/$(name)"; \
+		mv src/test/java/com/example/* "src/test/java/$(name)/"; \
+		rm -rf src/test/java/com/example; \
+		rm -rf src/test/java/com 2>/dev/null || true; \
+	fi; \
+	sed -i 's|<groupId>${groupId}</groupId>|<groupId>$(name)</groupId>|g' Makefile
+
+# Display help
+help:
+	@echo "${artifactId} Library - Available targets:"
+	@echo ""
+	@echo "  build          - Build JAR library"
+	@echo "  compile        - Compile source code"
+	@echo "  test          - Run unit tests"
+	@echo "  test-verbose  - Run tests with verbose output"
+	@echo "  install       - Install to local Maven repository"
+	@echo "  clean         - Clean build artifacts"
+	@echo "  docs          - Generate Javadoc"
+	@echo ""
+	@echo "  dev-build     - Full development build (clean + compile + test)"
+	@echo "  dev-install   - Clean install to local repository"
+	@echo "  check-repo    - Check if library is in local Maven repo"
+	@echo "  coordinates   - Show Maven dependency coordinates"
+	@echo "  groupid       - Change GroupId (usage: make groupid name=<new_name>)"
+	@echo ""
+	@echo "  help          - Show this help message"
+
+.PHONY: build compile test test-verbose install clean docs dev-build dev-install check-repo coordinates groupid help

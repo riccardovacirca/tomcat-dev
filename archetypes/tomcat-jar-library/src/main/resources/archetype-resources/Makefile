@@ -60,6 +60,28 @@ coordinates:
 	@echo "    <version>${version}</version>"
 	@echo "</dependency>"
 
+# Change GroupId to new name
+groupid:
+	@if [ -z "$(name)" ]; then \
+		echo "Usage: make groupid name=<new_group_id>"; \
+		exit 1; \
+	fi; \
+	sed -i 's|<groupId>${groupId}</groupId>|<groupId>$(name)</groupId>|g' pom.xml; \
+	find src -name "*.java" -exec sed -i 's|package com\.example|package $(name)|g' {} \;; \
+	if [ -d "src/main/java/com/example" ]; then \
+		mkdir -p "src/main/java/$(name)"; \
+		mv src/main/java/com/example/* "src/main/java/$(name)/"; \
+		rm -rf src/main/java/com/example; \
+		rm -rf src/main/java/com 2>/dev/null || true; \
+	fi; \
+	if [ -d "src/test/java/com/example" ]; then \
+		mkdir -p "src/test/java/$(name)"; \
+		mv src/test/java/com/example/* "src/test/java/$(name)/"; \
+		rm -rf src/test/java/com/example; \
+		rm -rf src/test/java/com 2>/dev/null || true; \
+	fi; \
+	sed -i 's|<groupId>${groupId}</groupId>|<groupId>$(name)</groupId>|g' Makefile
+
 # Display help
 help:
 	@echo "${artifactId} Library - Available targets:"
@@ -76,7 +98,8 @@ help:
 	@echo "  dev-install   - Clean install to local repository"
 	@echo "  check-repo    - Check if library is in local Maven repo"
 	@echo "  coordinates   - Show Maven dependency coordinates"
+	@echo "  groupid       - Change GroupId (usage: make groupid name=<new_name>)"
 	@echo ""
 	@echo "  help          - Show this help message"
 
-.PHONY: build compile test test-verbose install clean docs dev-build dev-install check-repo coordinates help
+.PHONY: build compile test test-verbose install clean docs dev-build dev-install check-repo coordinates groupid help
