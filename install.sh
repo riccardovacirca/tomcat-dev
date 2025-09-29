@@ -180,14 +180,16 @@ create_gitignore() {
     print_info "Creating .gitignore file..."
     cat > ".gitignore" << 'EOF'
 *
+!archetypes/
+!archetypes/**
+!docs/
+!docs/**
+!examples/
+!examples/**
 !install.sh
 !Makefile
 !README.md
 !LICENSE
-!examples/
-!examples/**
-!archetypes/
-!archetypes/**
 
 **/target/
 target/
