@@ -191,10 +191,9 @@ create_gitignore() {
 !README.md
 !LICENSE
 
-**/target/
-target/
-*.war
-*.class
+archetypes/
+archetypes/*/target/
+archetypes/*/target/**
 EOF
     print_info ".gitignore file created"
   else
