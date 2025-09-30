@@ -14,8 +14,7 @@ help:
 	@echo "Usage:"
 	@echo "  make app name=<app_name> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
 	@echo "  make lib name=<lib_name> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
-	@echo "  make remove app=<app_name>              - Remove webapp and associated database"
-	@echo "  make remove lib=<lib_name>              - Remove JAR library"
+	@echo "  make remove name=<project_name>         - Remove project (auto-detects webapp/library)"
 	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
 	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
 	@echo "  make arch                               - Rebuild and install Maven archetypes"
@@ -27,10 +26,9 @@ help:
 	@echo "Examples:"
 	@echo "  make app name=my-webapp"
 	@echo "  make app name=my-api db=postgres"
-	@echo "  make remove app=my-webapp"
+	@echo "  make remove name=my-project"
 	@echo "  make lib name=my-library"
 	@echo "  make lib name=auth-service db=postgres"
-	@echo "  make remove lib=my-library"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -87,19 +85,20 @@ lib:
 	fi
 
 remove:
-	@if [ -n "$(app)" ] && [ -n "$(lib)" ]; then \
-		echo "Error: specify either app=<name> or lib=<name>, not both"; \
+	@if [ -z "$(name)" ]; then \
+		echo "Error: name parameter required"; \
+		echo "Usage: make remove name=<project_name>"; \
 		exit 1; \
 	fi
-	@if [ -z "$(app)" ] && [ -z "$(lib)" ]; then \
-		echo "Error: either app=<name> or lib=<name> parameter required"; \
-		echo "Usage: make remove app=<app_name> OR make remove lib=<lib_name>"; \
-		exit 1; \
-	fi
-	@if [ -n "$(app)" ]; then \
-		./install.sh --remove-webapp $(app); \
+	@if [ -d "$(PROJECTS_DIR)/$(name)" ]; then \
+		if [ -f "$(PROJECTS_DIR)/$(name)/pom.xml" ] && grep -q "<packaging>war</packaging>" "$(PROJECTS_DIR)/$(name)/pom.xml"; then \
+			./install.sh --remove-webapp $(name); \
+		else \
+			./install.sh --remove-library $(name); \
+		fi; \
 	else \
-		./install.sh --remove-library $(lib); \
+		echo "Error: Project '$(name)' not found in $(PROJECTS_DIR)/ directory"; \
+		exit 1; \
 	fi
 
 clean-arch:
