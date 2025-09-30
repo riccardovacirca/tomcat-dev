@@ -4,7 +4,7 @@ MAKEFLAGS += --no-print-directory
 
 PROJECTS_DIR = projects
 
-.PHONY: build deploy help app lib remove postgres default
+.PHONY: build deploy help app lib remove postgres arch clean-arch default
 
 # Default target - shows help
 default:
@@ -18,6 +18,8 @@ help:
 	@echo "  make remove lib=<lib_name>              - Remove JAR library"
 	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
 	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
+	@echo "  make arch                               - Rebuild and install Maven archetypes"
+	@echo "  make clean-arch                         - Clean archetype target directories"
 	@echo "  make postgres                           - Connect to PostgreSQL database"
 	@echo ""
 	@echo "Database types: postgres, mariadb, sqlite"
@@ -99,6 +101,21 @@ remove:
 	else \
 		./install.sh --remove-library $(lib); \
 	fi
+
+clean-arch:
+	@echo "Cleaning archetype target directories..."
+	@rm -rf archetypes/*/target
+	@echo "Archetype target directories cleaned"
+
+arch:
+	@echo "Removing archetypes from local Maven repository..."
+	@rm -rf ~/.m2/repository/com/example/tomcat-*-archetype
+	@echo "Rebuilding and installing archetypes..."
+	@cd archetypes && for archetype in */; do \
+		echo "Installing $$archetype"; \
+		(cd "$$archetype" && mvn clean install -q); \
+	done
+	@echo "Archetypes rebuilt and installed"
 
 postgres:
 	@if [ ! -f .env ]; then \

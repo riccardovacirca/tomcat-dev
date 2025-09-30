@@ -1097,8 +1097,13 @@ create_webapp() {
     print_error "Failed to create webapp '$app_name'"
     exit 1
   fi
-  
-  
+
+  # Automatically change groupId to app name
+  print_info "Setting groupId to '$app_name'..."
+  cd "projects/$app_name" || exit 1
+  make groupid name="$app_name" >/dev/null 2>&1
+  cd ../..
+
   # Create database and user for webapp if database type is specified
   if [ -n "$db_type" ]; then
     create_webapp_database "$app_name" "$db_type"
@@ -1258,7 +1263,13 @@ create_library() {
     print_error "Failed to create library '$lib_name'"
     exit 1
   fi
-  
+
+  # Automatically change groupId to library name
+  print_info "Setting groupId to '$lib_name'..."
+  cd "projects/$lib_name" || exit 1
+  make groupid name="$lib_name" >/dev/null 2>&1
+  cd ../..
+
   print_info "Created: projects/$lib_name/"
 }
 
