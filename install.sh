@@ -192,7 +192,6 @@ create_gitignore() {
 !README.md
 !LICENSE
 
-archetypes/
 archetypes/*/target/
 archetypes/*/target/**
 EOF
