@@ -12,6 +12,7 @@ CREATE_LIBRARY=""
 REMOVE_WEBAPP=""
 REMOVE_LIBRARY=""
 DATABASE_TYPE=""
+GROUP_ID=""
 
 print_info() {
   printf "[INFO] %s\n" "$1"
@@ -1032,6 +1033,7 @@ remove_sqlite_webapp_database() {
 create_webapp() {
   local app_name="$1"
   local db_type="$2"
+  local group_id="${GROUP_ID:-com.example}"
 
   if [ -z "$app_name" ]; then
     print_error "Application name is required"
@@ -1045,10 +1047,10 @@ create_webapp() {
 
   # Ensure all archetypes are installed before proceeding
   ensure_archetypes_installed
-  
+
   if [ -n "$db_type" ]; then
-    print_info "Creating webapp '$app_name' with $db_type database..."
-    
+    print_info "Creating webapp '$app_name' with groupId '$group_id' and $db_type database..."
+
     # Validate database type
     case "$db_type" in
       postgres|mariadb|sqlite)
@@ -1058,11 +1060,11 @@ create_webapp() {
         exit 1
         ;;
     esac
-    
+
     cd projects || exit 1
-    
+
     mvn archetype:generate \
-      -DgroupId=com.example \
+      -DgroupId="$group_id" \
       -DartifactId="$app_name" \
       -DarchetypeGroupId=com.example.archetypes \
       -DarchetypeArtifactId=tomcat-webapp-database-archetype \
@@ -1075,11 +1077,11 @@ create_webapp() {
     # Return to original directory
     cd ..
   else
-    print_info "Creating webapp '$app_name'..."
+    print_info "Creating webapp '$app_name' with groupId '$group_id'..."
     cd projects || exit 1
 
     mvn archetype:generate \
-      -DgroupId=com.example \
+      -DgroupId="$group_id" \
       -DartifactId="$app_name" \
       -DarchetypeGroupId=com.example.archetypes \
       -DarchetypeArtifactId=tomcat-webapp-archetype \
@@ -1091,24 +1093,18 @@ create_webapp() {
     # Return to original directory
     cd ..
   fi
-    
+
   if [ ! -d "projects/$app_name" ]; then
     print_error "Failed to create webapp '$app_name'"
     exit 1
   fi
-
-  # Automatically change groupId to app name
-  print_info "Setting groupId to '$app_name'..."
-  cd "projects/$app_name" || exit 1
-  make groupid name="$app_name" >/dev/null 2>&1
-  cd ../..
 
   # Create database and user for webapp if database type is specified
   if [ -n "$db_type" ]; then
     create_webapp_database "$app_name" "$db_type"
   fi
 
-  print_info "Created: projects/$app_name/"
+  print_info "Created: projects/$app_name/ with groupId: $group_id"
 }
 
 # Remove webapp and associated database
@@ -1198,6 +1194,7 @@ remove_library() {
 create_library() {
   local lib_name="$1"
   local db_type="$2"
+  local group_id="${GROUP_ID:-com.example}"
 
   if [ -z "$lib_name" ]; then
     print_error "Library name is required"
@@ -1211,10 +1208,10 @@ create_library() {
 
   # Ensure all archetypes are installed before proceeding
   ensure_archetypes_installed
-  
+
   if [ -n "$db_type" ]; then
-    print_info "Creating library '$lib_name' with $db_type database..."
-    
+    print_info "Creating library '$lib_name' with groupId '$group_id' and $db_type database..."
+
     # Validate database type
     case "$db_type" in
       postgres|mariadb|sqlite)
@@ -1224,11 +1221,11 @@ create_library() {
         exit 1
         ;;
     esac
-    
+
     cd projects || exit 1
-    
+
     mvn archetype:generate \
-      -DgroupId=com.example \
+      -DgroupId="$group_id" \
       -DartifactId="$lib_name" \
       -DarchetypeGroupId=com.example.archetypes \
       -DarchetypeArtifactId=tomcat-jar-database-archetype \
@@ -1241,11 +1238,11 @@ create_library() {
     # Return to original directory
     cd ..
   else
-    print_info "Creating library '$lib_name'..."
+    print_info "Creating library '$lib_name' with groupId '$group_id'..."
     cd projects || exit 1
 
     mvn archetype:generate \
-      -DgroupId=com.example \
+      -DgroupId="$group_id" \
       -DartifactId="$lib_name" \
       -DarchetypeGroupId=com.example.archetypes \
       -DarchetypeArtifactId=tomcat-jar-library \
@@ -1263,13 +1260,7 @@ create_library() {
     exit 1
   fi
 
-  # Automatically change groupId to library name
-  print_info "Setting groupId to '$lib_name'..."
-  cd "projects/$lib_name" || exit 1
-  make groupid name="$lib_name" >/dev/null 2>&1
-  cd ../..
-
-  print_info "Created: projects/$lib_name/"
+  print_info "Created: projects/$lib_name/ with groupId: $group_id"
 }
 
 # Parse command line arguments
@@ -1330,6 +1321,14 @@ parse_args() {
           exit 1
         fi
         DATABASE_TYPE="$2"
+        shift 2
+        ;;
+      --groupid)
+        if [ -z "$2" ]; then
+          print_error "--groupid requires a groupId value"
+          exit 1
+        fi
+        GROUP_ID="$2"
         shift 2
         ;;
       --help|-h)

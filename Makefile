@@ -4,7 +4,7 @@ MAKEFLAGS += --no-print-directory
 
 PROJECTS_DIR = projects
 
-.PHONY: build deploy help app lib remove postgres arch clean-arch default
+.PHONY: build deploy help app lib remove postgres arch clean-arch list default
 
 # Default target - shows help
 default:
@@ -12,23 +12,24 @@ default:
 
 help:
 	@echo "Usage:"
-	@echo "  make app name=<app_name> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
-	@echo "  make lib name=<lib_name> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
-	@echo "  make remove name=<project_name>         - Remove project (auto-detects webapp/library)"
-	@echo "  make build app=<app_name>               - Build specific app from $(PROJECTS_DIR)/"
-	@echo "  make deploy app=<app_name>              - Deploy specific app from $(PROJECTS_DIR)/"
-	@echo "  make arch                               - Rebuild and install Maven archetypes"
-	@echo "  make clean-arch                         - Clean archetype target directories"
-	@echo "  make postgres                           - Connect to PostgreSQL database"
+	@echo "  make app name=<app_name> id=<groupId> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
+	@echo "  make lib name=<lib_name> id=<groupId> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
+	@echo "  make remove name=<project_name>                      - Remove project (auto-detects webapp/library)"
+	@echo "  make list                                            - List all projects (webapps and libraries)"
+	@echo "  make build app=<app_name>                            - Build specific app from $(PROJECTS_DIR)/"
+	@echo "  make deploy app=<app_name>                           - Deploy specific app from $(PROJECTS_DIR)/"
+	@echo "  make arch                                            - Rebuild and install Maven archetypes"
+	@echo "  make clean-arch                                      - Clean archetype target directories"
+	@echo "  make postgres                                        - Connect to PostgreSQL database"
 	@echo ""
 	@echo "Database types: postgres, mariadb, sqlite"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make app name=my-webapp"
-	@echo "  make app name=my-api db=postgres"
+	@echo "  make app name=my-webapp id=com.mycompany"
+	@echo "  make app name=my-api id=com.mycompany.api db=postgres"
+	@echo "  make lib name=my-library id=com.mycompany.lib"
+	@echo "  make lib name=auth-service id=myauth db=postgres"
 	@echo "  make remove name=my-project"
-	@echo "  make lib name=my-library"
-	@echo "  make lib name=auth-service db=postgres"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -64,24 +65,38 @@ deploy:
 
 app:
 	@if [ -z "$(name)" ]; then \
-		echo "Error: name parameter required. Usage: make app name=<app_name> [db=<db_type>]"; \
+		echo "Error: name parameter required"; \
+		echo "Usage: make app name=<app_name> id=<groupId> [db=<db_type>]"; \
+		exit 1; \
+	fi
+	@if [ -z "$(id)" ]; then \
+		echo "Error: id parameter required for groupId"; \
+		echo "Usage: make app name=<app_name> id=<groupId> [db=<db_type>]"; \
+		echo "Example: make app name=my-webapp id=com.mycompany"; \
 		exit 1; \
 	fi
 	@if [ -n "$(db)" ]; then \
-		./install.sh --create-webapp $(name) --database $(db); \
+		./install.sh --create-webapp $(name) --groupid $(id) --database $(db); \
 	else \
-		./install.sh --create-webapp $(name); \
+		./install.sh --create-webapp $(name) --groupid $(id); \
 	fi
 
 lib:
 	@if [ -z "$(name)" ]; then \
-		echo "Error: name parameter required. Usage: make lib name=<lib_name> [db=<db_type>]"; \
+		echo "Error: name parameter required"; \
+		echo "Usage: make lib name=<lib_name> id=<groupId> [db=<db_type>]"; \
+		exit 1; \
+	fi
+	@if [ -z "$(id)" ]; then \
+		echo "Error: id parameter required for groupId"; \
+		echo "Usage: make lib name=<lib_name> id=<groupId> [db=<db_type>]"; \
+		echo "Example: make lib name=my-library id=com.mycompany.lib"; \
 		exit 1; \
 	fi
 	@if [ -n "$(db)" ]; then \
-		./install.sh --create-library $(name) --database $(db); \
+		./install.sh --create-library $(name) --groupid $(id) --database $(db); \
 	else \
-		./install.sh --create-library $(name); \
+		./install.sh --create-library $(name) --groupid $(id); \
 	fi
 
 remove:
@@ -115,6 +130,38 @@ arch:
 		(cd "$$archetype" && mvn clean install -q); \
 	done
 	@echo "Archetypes rebuilt and installed"
+
+list:
+	@echo ""
+	@if [ -d "$(PROJECTS_DIR)" ] && [ -n "$$(ls -A $(PROJECTS_DIR) 2>/dev/null)" ]; then \
+		echo "WEBAPPS:"; \
+		for project in $(PROJECTS_DIR)/*; do \
+			if [ -f "$$project/pom.xml" ]; then \
+				if grep -q "<packaging>war</packaging>" "$$project/pom.xml" 2>/dev/null; then \
+					name=$$(basename "$$project"); \
+					groupId=$$(grep -m1 "<groupId>" "$$project/pom.xml" | sed 's/.*<groupId>\(.*\)<\/groupId>.*/\1/' | xargs); \
+					version=$$(grep -m1 "<version>" "$$project/pom.xml" | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | xargs); \
+					printf "  %-20s (groupId: %-30s version: %s)\n" "$$name" "$$groupId" "$$version"; \
+				fi; \
+			fi; \
+		done; \
+		echo ""; \
+		echo "LIBRARIES:"; \
+		for project in $(PROJECTS_DIR)/*; do \
+			if [ -f "$$project/pom.xml" ]; then \
+				if grep -q "<packaging>jar</packaging>" "$$project/pom.xml" 2>/dev/null; then \
+					name=$$(basename "$$project"); \
+					groupId=$$(grep -m1 "<groupId>" "$$project/pom.xml" | sed 's/.*<groupId>\(.*\)<\/groupId>.*/\1/' | xargs); \
+					version=$$(grep -m1 "<version>" "$$project/pom.xml" | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | xargs); \
+					printf "  %-20s (groupId: %-30s version: %s)\n" "$$name" "$$groupId" "$$version"; \
+				fi; \
+			fi; \
+		done; \
+		echo ""; \
+	else \
+		echo "No projects found in $(PROJECTS_DIR)/"; \
+		echo ""; \
+	fi
 
 postgres:
 	@if [ ! -f .env ]; then \
