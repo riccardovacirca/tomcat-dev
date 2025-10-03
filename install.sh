@@ -860,6 +860,81 @@ EOF
   print_info "Run 'source ~/.bashrc' or start a new shell session inside container to use 'claude'"
 }
 
+# Create .env file for webapp with database connection parameters
+create_webapp_env_file() {
+  local app_name="$1"
+  local db_type="$2"
+  local env_file="projects/$app_name/.env"
+
+  print_info "Creating .env file for webapp '$app_name'..."
+
+  case "$db_type" in
+    postgres)
+      local postgres_host=$(grep POSTGRES_CONTAINER_NAME .env | cut -d= -f2)
+      local postgres_port=$(grep POSTGRES_PORT .env | cut -d= -f2)
+      cat > "$env_file" << EOF
+# Database Configuration for $app_name
+DB_TYPE=postgres
+DB_HOST=$postgres_host
+DB_PORT=5432
+DB_NAME=$app_name
+DB_USER=$app_name
+DB_PASSWORD=secret
+
+# JDBC Connection String
+JDBC_URL=jdbc:postgresql://$postgres_host:5432/$app_name
+
+# External Connection (from host machine)
+EXTERNAL_HOST=localhost
+EXTERNAL_PORT=$postgres_port
+EXTERNAL_JDBC_URL=jdbc:postgresql://localhost:$postgres_port/$app_name
+EOF
+      ;;
+    mariadb)
+      local mariadb_host=$(grep MARIADB_CONTAINER_NAME .env | cut -d= -f2)
+      local mariadb_port=$(grep MARIADB_PORT .env | cut -d= -f2)
+      cat > "$env_file" << EOF
+# Database Configuration for $app_name
+DB_TYPE=mariadb
+DB_HOST=$mariadb_host
+DB_PORT=3306
+DB_NAME=$app_name
+DB_USER=$app_name
+DB_PASSWORD=secret
+
+# JDBC Connection String
+JDBC_URL=jdbc:mariadb://$mariadb_host:3306/$app_name
+
+# External Connection (from host machine)
+EXTERNAL_HOST=localhost
+EXTERNAL_PORT=$mariadb_port
+EXTERNAL_JDBC_URL=jdbc:mariadb://localhost:$mariadb_port/$app_name
+EOF
+      ;;
+    sqlite)
+      local sqlite_data_dir=$(grep SQLITE_DATA_DIR .env | cut -d= -f2)
+      cat > "$env_file" << EOF
+# Database Configuration for $app_name
+DB_TYPE=sqlite
+DB_FILE=${app_name}.sqlite
+DB_PATH=/workspace/$sqlite_data_dir/${app_name}.sqlite
+
+# JDBC Connection String
+JDBC_URL=jdbc:sqlite:/workspace/$sqlite_data_dir/${app_name}.sqlite
+
+# Local File System Path
+LOCAL_DB_PATH=$sqlite_data_dir/${app_name}.sqlite
+EOF
+      ;;
+    *)
+      print_warn ".env file creation not implemented for type: $db_type"
+      return 1
+      ;;
+  esac
+
+  print_info ".env file created: $env_file"
+}
+
 # Create database and user for webapp
 create_webapp_database() {
   local app_name="$1"
@@ -1101,6 +1176,7 @@ create_webapp() {
   # Create database and user for webapp if database type is specified
   if [ -n "$db_type" ]; then
     create_webapp_database "$app_name" "$db_type"
+    create_webapp_env_file "$app_name" "$db_type"
   fi
 
   print_info "Created: projects/$app_name/ with groupId: $group_id"
