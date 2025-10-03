@@ -35,26 +35,30 @@
             <version>3.45.1</version>
         </dependency>
         
-        <!-- Database Driver -->
-#if( $dbType == "postgres" )
+        <!-- Database Drivers - All supported databases -->
+        <!-- PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.3</version>
+            <scope>provided</scope>
         </dependency>
-#elseif( $dbType == "mariadb" )
+
+        <!-- MariaDB Driver -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>3.1.4</version>
+            <scope>provided</scope>
         </dependency>
-#elseif( $dbType == "sqlite" )
+
+        <!-- SQLite Driver -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.42.0.0</version>
+            <scope>provided</scope>
         </dependency>
-#end
         
         <!-- JUnit 5 for unit testing -->
         <dependency>

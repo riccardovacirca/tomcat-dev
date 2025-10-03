@@ -1268,7 +1268,7 @@ remove_library() {
 
 create_library() {
   local lib_name="$1"
-  local db_type="$2"
+  local with_db="$2"
   local group_id="${GROUP_ID:-com.example}"
 
   if [ -z "$lib_name" ]; then
@@ -1281,22 +1281,10 @@ create_library() {
     exit 1
   fi
 
-  # Ensure all archetypes are installed before proceeding
   ensure_archetypes_installed
 
-  if [ -n "$db_type" ]; then
-    print_info "Creating library '$lib_name' with groupId '$group_id' and $db_type database..."
-
-    # Validate database type
-    case "$db_type" in
-      postgres|mariadb|sqlite)
-        ;;
-      *)
-        print_error "Unsupported database type: $db_type. Supported: postgres, mariadb, sqlite"
-        exit 1
-        ;;
-    esac
-
+  if [ "$with_db" = "true" ]; then
+    print_info "Creating library '$lib_name' with multi-database support..."
     cd projects || exit 1
 
     mvn archetype:generate \
@@ -1305,15 +1293,13 @@ create_library() {
       -DarchetypeGroupId=com.example.archetypes \
       -DarchetypeArtifactId=tomcat-jar-database-archetype \
       -DarchetypeVersion=1.0.0 \
-      -DdbType="$db_type" \
       -DinteractiveMode=false \
       -DarchetypeCatalog=local \
       -q
 
-    # Return to original directory
     cd ..
   else
-    print_info "Creating library '$lib_name' with groupId '$group_id'..."
+    print_info "Creating library '$lib_name'..."
     cd projects || exit 1
 
     mvn archetype:generate \
@@ -1326,7 +1312,6 @@ create_library() {
       -DarchetypeCatalog=local \
       -q
 
-    # Return to original directory
     cd ..
   fi
 
@@ -1397,6 +1382,10 @@ parse_args() {
         fi
         DATABASE_TYPE="$2"
         shift 2
+        ;;
+      --with-database)
+        WITH_DATABASE=true
+        shift
         ;;
       --groupid)
         if [ -z "$2" ]; then
@@ -1472,7 +1461,7 @@ main() {
   fi
 
   if [ -n "$CREATE_LIBRARY" ]; then
-    create_library "$CREATE_LIBRARY" "$DATABASE_TYPE"
+    create_library "$CREATE_LIBRARY" "$WITH_DATABASE"
     exit 0
   fi
   

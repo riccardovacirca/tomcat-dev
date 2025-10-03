@@ -12,24 +12,19 @@ default:
 
 help:
 	@echo "Usage:"
-	@echo "  make app name=<app_name> id=<groupId> [db=<db_type>] - Generate new Maven webapp in $(PROJECTS_DIR)/"
-	@echo "  make lib name=<lib_name> id=<groupId> [db=<db_type>] - Generate new JAR library in $(PROJECTS_DIR)/"
-	@echo "  make remove name=<project_name>                      - Remove project (auto-detects webapp/library)"
-	@echo "  make list                                            - List all projects (webapps and libraries)"
-	@echo "  make build app=<app_name>                            - Build specific app from $(PROJECTS_DIR)/"
-	@echo "  make deploy app=<app_name>                           - Deploy specific app from $(PROJECTS_DIR)/"
-	@echo "  make arch                                            - Rebuild and install Maven archetypes"
-	@echo "  make clean-arch                                      - Clean archetype target directories"
-	@echo "  make postgres                                        - Connect to PostgreSQL database"
-	@echo ""
-	@echo "Database types: postgres, mariadb, sqlite"
+	@echo "  make app name=<app_name> id=<groupId> [db=<db_type>]"
+	@echo "  make lib name=<lib_name> id=<groupId> [db=true]"
+	@echo "  make remove name=<project_name>"
+	@echo "  make list"
+	@echo "  make build app=<app_name>"
+	@echo "  make deploy app=<app_name>"
+	@echo "  make arch"
+	@echo "  make clean-arch"
+	@echo "  make postgres"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make app name=my-webapp id=com.mycompany"
-	@echo "  make app name=my-api id=com.mycompany.api db=postgres"
-	@echo "  make lib name=my-library id=com.mycompany.lib"
-	@echo "  make lib name=auth-service id=myauth db=postgres"
-	@echo "  make remove name=my-project"
+	@echo "  make app name=my-api id=com.example db=postgres"
+	@echo "  make lib name=mylib id=com.example db=true"
 
 build:
 	@if [ -z "$(app)" ]; then \
@@ -84,17 +79,17 @@ app:
 lib:
 	@if [ -z "$(name)" ]; then \
 		echo "Error: name parameter required"; \
-		echo "Usage: make lib name=<lib_name> id=<groupId> [db=<db_type>]"; \
+		echo "Usage: make lib name=<lib_name> id=<groupId> [db=true]"; \
 		exit 1; \
 	fi
 	@if [ -z "$(id)" ]; then \
 		echo "Error: id parameter required for groupId"; \
-		echo "Usage: make lib name=<lib_name> id=<groupId> [db=<db_type>]"; \
+		echo "Usage: make lib name=<lib_name> id=<groupId> [db=true]"; \
 		echo "Example: make lib name=my-library id=com.mycompany.lib"; \
 		exit 1; \
 	fi
-	@if [ -n "$(db)" ]; then \
-		./install.sh --create-library $(name) --groupid $(id) --database $(db); \
+	@if [ "$(db)" = "true" ]; then \
+		./install.sh --create-library $(name) --groupid $(id) --with-database; \
 	else \
 		./install.sh --create-library $(name) --groupid $(id); \
 	fi
